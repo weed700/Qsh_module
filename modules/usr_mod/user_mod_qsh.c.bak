@@ -1,0 +1,144 @@
+#include "user_ll_qsh.h"
+
+
+Node* List = NULL;          //리스트 헤더
+Node* Current = NULL;       //리스트 탐색할 때 필요
+Node* NewNode = NULL;       //새로운 노드
+
+pthread_t thread[2];
+pthread_mutex_t lmu = PTHREAD_MUTEX_INITIALIZER;
+
+void thread_clean_up(void* arg)
+{
+    syslog(LOG_INFO | LOG_LOCAL0,"thread_clean_up in!\n");
+    
+    //모든 노드 제거
+//    for(i = 0; i<Count;i++)
+//    {
+//        Current = Qsh_GetNodeAt(List,0);
+//
+//        if(NULL != Current)
+//        {
+//            Qsh_RemoveNode(&List, Current);
+//            Qsh_DestroyNode(Current);
+//        }
+//    }
+}
+
+void sigio_handler(int signo)
+{
+    pthread_cancel(thread[0]);
+//    q_data_t d;
+//    int fd;
+//
+//    fd = open(DEVICE_NAME, O_RDWR);
+//    
+//    syslog(LOG_INFO | LOG_LOCAL0,"sigio_handler in!\n");
+//
+//    read(fd,&d,sizeof(d));
+//    syslog(LOG_INFO | LOG_LOCAL0,"test : %u %s\n",d.id, d.special);
+//
+//    //새로운 노드 생성
+//    NewNode = Qsh_CreateNode(d);
+//    Qsh_AppendNode(&List, NewNode);
+//
+//    close(fd);
+}
+
+
+void* do_thread(void* arg)
+{
+    syslog(LOG_INFO | LOG_LOCAL0,"do_thread in!\n");
+}
+
+
+void* main_thread(void* arg)
+{
+    //sigio
+    struct sigaction sigact, oldact;
+    int oflag;
+    int dev;
+
+    int i=0;
+    int Count = 0;
+
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+
+    pthread_cleanup_push(thread_clean_up, (void*)NULL);
+   
+    //sigio handler create
+    sigact.sa_handler = sigio_handler;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = SA_INTERRUPT;
+
+    if(sigaction(SIGIO, &sigact, &oldact) < 0)
+    {
+        perror("sigaction error!\n");
+        exit(0);
+    }
+    
+    //fcntl 파일 디스크립트
+    dev = open(DEVICE_NAME, O_RDWR);
+
+    if(0 <= dev)
+    {
+        fcntl(dev, F_SETOWN, getpid());
+        oflag = fcntl(dev,F_GETFL);
+        fcntl(dev,F_SETFL, oflag | FASYNC);
+    }
+
+    syslog(LOG_INFO | LOG_LOCAL0,"main_thread in! \n");
+    
+    while(1)
+    {
+        syslog(LOG_INFO | LOG_LOCAL0,"whilea(1)! \n");
+//        if(NULL != List) //어떠한 신호가 오면 실행
+//        {            
+//            /* 노드 찾아서 출력*/
+//            Count = Qsh_GetNodeCount(List);
+//            for(i=0;i<Count;i++)
+//            {
+//                Current = Qsh_GetNodeAt(List,i);
+//                syslog(LOG_INFO | LOG_LOCAL0,"while : %u : %s\n",Current->Data.id, Current->Data.special); 
+//            }
+//        }
+
+        sleep(1);
+    }
+
+    close(dev);
+}
+
+
+int main(int argc, char** argv)
+{
+    int thr_id;
+    int status;
+ 
+    syslog(LOG_INFO | LOG_LOCAL0,"module -> user info\n");
+
+    //첫 번째 스레드 생성
+    thr_id = pthread_create(&thread[0],NULL,main_thread,NULL);
+
+    if(thr_id < 0){
+        syslog(LOG_INFO | LOG_LOCAL0,"thread create error!\n");
+        exit(0);
+    }
+
+    //두 번째 스레드 생성
+//    thr_id = pthread_create(&thread[1],NULL,do_thread,NULL);
+//    
+//    if(thr_id < 0){
+//        syslog(LOG_INFO | LOG_LOCAL0,"thread create error!\n");
+//        exit(0);
+//    }
+   
+    //스레드 종료를 기다림.
+//    pthread_join(thread[0], (void **)&status);
+//    pthread_join(thread[1], (void **)&status);
+    
+//    free(d);
+
+    return 0;
+}
+
