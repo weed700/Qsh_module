@@ -890,7 +890,7 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 	struct file *realfile;
 	struct ovl_dir_file *od;
 	enum ovl_path_type type;  
-    //extern struct qsh_metadata qsh_mt; //HOON,test4
+    //extern struct qsh_metadata qsh_mt; //HOON,test5
 	
     od = kzalloc(sizeof(struct ovl_dir_file), GFP_KERNEL);
 	if (!od)
