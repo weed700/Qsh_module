@@ -1,0 +1,215 @@
+#include <linux/init.h>
+//#include <linux/moduleparam.h>  //kernel module parameter macro
+#include <linux/module.h>
+
+#include <linux/kernel.h>       //printk()
+#include <linux/slab.h>         //kmalloc()
+#include <linux/fs.h>           //everything...
+#include <linux/errno.h>        //error codes
+#include <linux/types.h>        //size_t
+
+#include <linux/kdev_t.h>       //device type
+#include <linux/cdev.h>         //character device
+#include <linux/device.h>       //device structure
+
+/*kernel thread*/
+#include <linux/completion.h>
+#include <linux/delay.h>
+#include <linux/kthread.h>
+
+//quota & xfs
+#include <linux/dqblk_xfs.h>
+#include <linux/quotaops.h>
+
+#include <linux/syscalls.h>
+
+#define Q_XGETPQUOTA QCMD(Q_XGETQUOTA, PRJQUOTA)
+//character device info
+#define DEVICE_NAME "qshdrv"
+static int qshdrv_major = 240;
+//module_param(qshdrv_major,int,0);
+
+/*qsh struct format*/
+typedef struct Qsh_quota_data{
+    unsigned int id;
+    char special[100];
+}qsh_quota_data_t;
+
+
+/*thread structure*/
+struct task_struct* g_th_id=NULL;
+
+fs_disk_quota_t qsh_d;
+
+extern struct super_block *quotactl_block(const char __user *special, int cmd);
+
+/*kernel thread ##*/
+static int kthread_ex(void* arg)
+{
+    printk("Q_sh : %s() : called \n", __func__);
+    
+    while(!kthread_should_stop())
+    {
+        printk("Q_sh : %s() : loop => \n", __func__);
+        printk("Q_sh : %s test : %u, %llu\n",__func__,qsh_d.d_id,qsh_d.d_rtb_hardlimit);
+        ssleep(10);
+    }
+
+    printk("Q_sh : %s() : kthread_should_stop() called. Bye.\n", __func__);
+    return 0;
+}
+
+static int qshdrv_open(struct inode* inode, struct file* file)
+{
+    printk("qshdrv opened!! \n");
+    return 0;
+}
+
+
+static ssize_t qshdrv_write(struct file* filp, const char __user* buf, size_t count, loff_t* f_ops)
+{
+    qsh_quota_data_t* k_buf;
+
+    k_buf = (qsh_quota_data_t*)kmalloc(count,GFP_KERNEL);
+    
+    if(copy_from_user(k_buf,buf,count))
+        return -EFAULT;
+
+    printk("Q_sh : abcd : %s %u\n",k_buf->special,k_buf->id);
+    
+    kfree(k_buf);
+    
+    return 0;
+}
+    
+//static DEFINE_MUTEX(qshdrv_mutex);
+long qshdrv_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
+{
+    //qsh_quota_data_t qsh_buf;
+    fs_disk_quota_t qsh_d;
+
+  //  int re;
+
+    printk("ioctl in \n");
+     
+    switch(cmd)
+    {
+        case _IOC_READ:
+            printk("Q_sh : %s_read\n",__func__);
+            break;
+        case _IOC_WRITE:
+            printk("Q_sh : %s_write\n",__func__);
+            //if(copy_from_user((void*)&qsh_buf,(void*)arg,sizeof(qsh_buf)))
+              //  return -EFAULT;
+            //printk("Q_sh : %s test : %u, %s\n",__func__,qsh_buf.id,qsh_buf.special);
+            if(copy_from_user((void*)&qsh_d,(void*)arg,sizeof(qsh_d)))
+                return -EFAULT;
+            //re = kernel_quotactl(Q_XGETPQUOTA,qsh_buf.special,qsh_buf.id,&qsh_d);
+            
+            printk("Q_sh : aaaaaaaaaaaaaa : %llu \n",qsh_d.d_bcount);
+                
+            break;
+        default:
+            printk("Q_sh : %s unknown command...\n",__func__);
+            break;
+    }
+    
+    return 0;
+}
+
+
+
+/*set up the cdev structure for a device*/
+static void qshdrv_setup_cdev(struct cdev* dev, int minor, struct file_operations* fops)
+{
+    int err, devno = MKDEV(qshdrv_major,minor);
+    
+    printk("Q_sh : %s \n",__func__);
+    cdev_init(dev,fops);
+    dev->ops = fops;
+    err = cdev_add(dev, devno, 1);
+
+    if(err)
+        printk(KERN_NOTICE "Error %d adding qshdrv %d\n",err,minor);
+}
+
+
+static struct file_operations qshdrv_fops = {
+    .write = qshdrv_write,
+    .open = qshdrv_open,
+    .unlocked_ioctl = qshdrv_ioctl,
+};
+
+#define MAX_QSHDRV_DEV 1
+static struct cdev QshDevs[MAX_QSHDRV_DEV];
+
+static struct class* qsh_class;
+
+static int __init qsh_mod_init(void)
+{
+    int re; 
+    
+    dev_t dev = MKDEV(qshdrv_major, 0);
+    qsh_class = class_create(THIS_MODULE,DEVICE_NAME);
+
+    /*character device create*/
+    if(qshdrv_major)
+        re = register_chrdev_region(dev, 1, DEVICE_NAME);
+    else{
+        re = alloc_chrdev_region(&dev, 0, 1, DEVICE_NAME);
+        qshdrv_major = MAJOR(dev);
+    }
+    
+    /*ls /dev/[DEVICE_NAME]*/
+    if(NULL == device_create(qsh_class,NULL,dev,NULL,DEVICE_NAME))
+        class_destroy(qsh_class);
+
+
+    if(re < 0){
+        printk(KERN_WARNING "qshdrv: unable to get major %d\n", qshdrv_major);
+        return re;
+    }
+
+    if(0 == qshdrv_major)
+        qshdrv_major = re;
+
+    qshdrv_setup_cdev(QshDevs,0,&qshdrv_fops);
+   
+    //mknod("/dev/qshdrv",S_IFCHR,dev);
+
+    printk(KERN_ALERT "Q_sh : %s() done\n", __FUNCTION__);
+    
+
+    /*thread create*/
+    /*
+    if(g_th_id == NULL)
+        g_th_id = (struct task_struct *)kthread_run(kthread_ex, NULL, "kthread_example");
+    */
+    return 0;
+}
+
+static void __exit qsh_mod_finish(void)
+{
+
+    //cleanup
+    device_destroy(qsh_class,MKDEV(qshdrv_major,0));
+    cdev_del(QshDevs);
+    unregister_chrdev_region(MKDEV(qshdrv_major,0),1);
+    class_destroy(qsh_class);
+
+    printk("Q_sh : qshdrv exit done\n");
+
+    if(g_th_id)
+    {
+        kthread_stop(g_th_id);
+        g_th_id = NULL;
+    }
+    printk("Q_sh : %s() : Bye.\n", __func__);
+}
+
+module_init(qsh_mod_init);
+module_exit(qsh_mod_finish);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("sehoon<weed700@gmail.com>");
+MODULE_DESCRIPTION("Qsh module for Linux Kernel module");
