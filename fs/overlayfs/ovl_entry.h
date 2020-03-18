@@ -108,7 +108,8 @@ struct ovl_inode {
 struct qsh_metadata{
     int qsh_flag;
     struct dentry* qsh_dentry;
-    char* qsh_dir_name;
+    //char* qsh_dir_name;
+    //struct vfsmount* qsh_upper_mnt; 
 };
 //HOON
 
@@ -120,5 +121,9 @@ static inline struct ovl_inode *OVL_I(struct inode *inode)
 
 static inline struct dentry *ovl_upperdentry_dereference(struct ovl_inode *oi)
 {
+    //HOON
+    //if(0 == strcmp("qsh.a",oi->__upperdentry->d_name.name))
+    //    printk("Q_sh : %s dentry_name : %s, dentry_ino : %lu\n",__func__,oi->__upperdentry->d_name.name,oi->__upperdentry->d_inode->i_ino); //HOON
+    //HOON
 	return READ_ONCE(oi->__upperdentry);
 }

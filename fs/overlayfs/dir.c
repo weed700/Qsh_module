@@ -260,6 +260,7 @@ static int ovl_instantiate(struct dentry *dentry, struct inode *inode,
 		 * hashed directory inode aliases.
          */
         inode = ovl_get_inode(dentry->d_sb, &oip);
+       
         if (WARN_ON(IS_ERR(inode)))
             return PTR_ERR(inode);
 	} else {
@@ -267,7 +268,7 @@ static int ovl_instantiate(struct dentry *dentry, struct inode *inode,
 		dput(newdentry);
 		inc_nlink(inode);
 	}
-    printk("Q_sh : %s inode : %lu, oip.newinode : %lu\n",__func__,inode->i_ino, oip.newinode->i_ino);
+    //printk("Q_sh : %s inode : %lu, oip.newinode : %lu\n",__func__,inode->i_ino, oip.newinode->i_ino); //HOON
 	d_instantiate(dentry, inode);
 	if (inode != oip.newinode) {
 		pr_warn_ratelimited("overlayfs: newly created inode found in cache (%pd2)\n",
@@ -299,7 +300,13 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
 	struct dentry *newdentry;
 	int err;
     extern struct qsh_metadata qsh_mt; //HOON
-
+    //HOON
+    if(0 == qsh_mt.qsh_flag)
+    {
+        printk("Q_sh : %s, udir change\n",__func__); //HOON
+        udir = qsh_mt.qsh_dentry->d_inode;
+    }
+    //HOON
 	if (!attr->hardlink && !IS_POSIXACL(udir))
 		attr->mode &= ~current_umask();
 
@@ -315,18 +322,20 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     }
     else
     {
-        newdentry = ovl_create_real(qsh_mt.qsh_dentry->d_inode,
+        newdentry = ovl_create_real(udir,
                 lookup_one_len(dentry->d_name.name,
                         qsh_mt.qsh_dentry,
                         dentry->d_name.len),
                     attr);
-        printk("Q_sh : %s, qsh_flag : %d, newdentry_ino : %lu, newdentry_name : %s, newp_ino : %lu, newp_name : %s\n",__func__,qsh_mt.qsh_flag,newdentry->d_inode->i_ino,newdentry->d_name.name, newdentry->d_parent->d_inode->i_ino,newdentry->d_parent->d_name.name);
+        printk("Q_sh : %s, qsh_flag : %d, newdentry_ino : %lu, newp_ino : %lu, newp_name : %s\n",__func__,qsh_mt.qsh_flag,newdentry->d_inode->i_ino, newdentry->d_parent->d_inode->i_ino,newdentry->d_parent->d_name.name);
     } 
     //HOON
 
     err = PTR_ERR(newdentry);
-    if (IS_ERR(newdentry))
+    if (IS_ERR(newdentry)){
+        printk("Q_sh : %s, out_unlock\n",__func__); //HOON
         goto out_unlock;
+    }
 
     if (ovl_type_merge(dentry->d_parent) && d_is_dir(newdentry)) {
         /* Setting opaque here is just an optimization, allow to fail */
@@ -334,8 +343,10 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     }
 
     err = ovl_instantiate(dentry, inode, newdentry, !!attr->hardlink);
-    if (err)
+    if (err){
+        printk("Q_sh : %s, out_cleanup\n",__func__); //HOON
 		goto out_cleanup;
+    }
 out_unlock:
 	inode_unlock(udir);
 	return err;
@@ -614,8 +625,8 @@ static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
 	};
 
     //HOON
-    if(0 == strcmp(dentry->d_name.name,"qsh.a"))
-        printk("Q_sh : %s  path : %s\n",__func__,dentry->d_parent->d_parent->d_name.name);
+    //if(0 == strcmp(dentry->d_name.name,"qsh.a"))
+    //    printk("Q_sh : %s  path : %s\n",__func__,dentry->d_parent->d_parent->d_name.name);
     //HOON
 	err = ovl_want_write(dentry);
 	if (err)
@@ -853,7 +864,7 @@ static int ovl_do_remove(struct dentry *dentry, bool is_dir)
 	bool lower_positive = ovl_lower_positive(dentry);
 	LIST_HEAD(list);
 
-    printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
+    //printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
 	/* No need to clean pure upper removed by vfs_rmdir() */
 	if (is_dir && (lower_positive || !ovl_pure_upper(dentry))) {
 		err = ovl_check_empty_dir(dentry, &list);

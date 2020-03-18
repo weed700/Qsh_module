@@ -827,12 +827,17 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
 		.redirect = NULL,
 		.metacopy = false,
 	};
+    //extern struct qsh_metadata qsh_mt; //HOON
 
 	if (dentry->d_name.len > ofs->namelen)
 		return ERR_PTR(-ENAMETOOLONG);
 
     old_cred = ovl_override_creds(dentry->d_sb);
     upperdir = ovl_dentry_upper(dentry->d_parent);
+    //HOON
+    //if(0 == qsh_mt.qsh_flag)
+    //    printk("Q_sh : %s, name : %s, ino : %lu\n",__func__,upperdir->d_name.name,upperdir->d_inode->i_ino);
+    //HOON
     if (upperdir) {
         
         err = ovl_lookup_layer(upperdir, &d, &upperdentry);

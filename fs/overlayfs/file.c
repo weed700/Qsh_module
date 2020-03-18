@@ -95,8 +95,8 @@ static int ovl_real_fdget_meta(const struct file *file, struct fd *real,
 	real->file = file->private_data;
     
     //HOON
-    if(0 == strcmp(real->file->f_path.dentry->d_name.name,"qsh.a"))
-        printk("Q_sh : %s i_no : %lu\n",__func__,real->file->f_inode->i_ino);
+    //if(0 == strcmp(real->file->f_path.dentry->d_name.name,"qsh.a"))
+    //    printk("Q_sh : %s i_no : %lu\n",__func__,real->file->f_inode->i_ino);
     //HOON
     
 	if (allow_meta)
@@ -129,11 +129,11 @@ static int ovl_open(struct inode *inode, struct file *file)
 	struct dentry *dentry = file_dentry(file);
 	struct file *realfile;
 	int err; 
-    //extern struct qsh_metadata qsh_mt; //HOON
+    extern struct qsh_metadata qsh_mt; //HOON
     
     //HOON
-    //if(0 == qsh_mt.qsh_flag)
-    //    printk("Q_sh : %s i_no : %lu\n",__func__,inode->i_ino);
+    if(0 == qsh_mt.qsh_flag)
+        printk("Q_sh : %s i_no : %lu, d_ino : %lu, d_name : %s\n",__func__,inode->i_ino,dentry->d_inode->i_ino,dentry->d_name.name);
     //HOON
 
 	err = ovl_open_maybe_copy_up(dentry, file->f_flags);
@@ -145,8 +145,8 @@ static int ovl_open(struct inode *inode, struct file *file)
 
 	realfile = ovl_open_realfile(file, ovl_inode_realdata(inode));
     //HOON
-    //if(0 == qsh_mt.qsh_flag)
-    //    printk("Q_sh : %s_2 i_no : %lu\n",__func__,realfile->f_inode->i_ino);
+    if(0 == qsh_mt.qsh_flag)
+        printk("Q_sh : %s_2 i_no : %lu file_ino : %lu, file_name : %s\n",__func__,realfile->f_inode->i_ino,file->f_inode->i_ino,realfile->f_path.dentry->d_name.name);
     //HOON
 	if (IS_ERR(realfile))
 		return PTR_ERR(realfile);
@@ -247,8 +247,8 @@ static ssize_t ovl_write_iter(struct kiocb *iocb, struct iov_iter *iter)
 	ssize_t ret;
 
     //HOON
-    if(0 == strcmp(file->f_path.dentry->d_name.name,"qsh.a"))
-        printk("Q_sh : %s i_no : %lu\n",__func__,inode->i_ino);
+    //if(0 == strcmp(file->f_path.dentry->d_name.name,"qsh.a"))
+    //    printk("Q_sh : %s i_no : %lu\n",__func__,inode->i_ino);
     //HOON
 
 	if (!iov_iter_count(iter))
@@ -506,17 +506,6 @@ static ssize_t ovl_copyfile(struct file *file_in, loff_t pos_in,
 
 	return ret;
 }
-//HOON
-/*qshdrv 모듈을 접근 하기 위한 파일 오퍼레이션 함수 포인터*/
-static int ovl_iterate_shared(struct file* file, struct dir_context* tmp)
-{
-    int t = 7;
-
-    printk("Q_sh : ovl_iterate_shared\n");
-
-    return t;
-}
-//HOON
 
 static ssize_t ovl_copy_file_range(struct file *file_in, loff_t pos_in,
 				   struct file *file_out, loff_t pos_out,
@@ -561,8 +550,6 @@ const struct file_operations ovl_file_operations = {
 	.fadvise	= ovl_fadvise,
 	.unlocked_ioctl	= ovl_ioctl,
 	.compat_ioctl	= ovl_compat_ioctl,
-    .iterate_shared      = ovl_iterate_shared,             //HOON
-
 	.copy_file_range	= ovl_copy_file_range,
 	.clone_file_range	= ovl_clone_file_range,
 	.dedupe_file_range	= ovl_dedupe_file_range,

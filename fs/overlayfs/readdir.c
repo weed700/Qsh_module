@@ -369,7 +369,7 @@ static int ovl_dir_read_merged(struct dentry *dentry, struct list_head *list,
 	};
 	int idx, next;
     
-    printk("Q_sh : %s, dentry : %s, ino : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
+    //printk("Q_sh : %s, dentry : %s, ino : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
 
 	for (idx = 0; idx != -1; idx = next) {
 		next = ovl_path_next(idx, dentry, &realpath);
@@ -412,7 +412,7 @@ static struct ovl_dir_cache *ovl_cache_get(struct dentry *dentry)
 	int res;
 	struct ovl_dir_cache *cache;
 
-    printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
+    //printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
 	cache = ovl_dir_cache(d_inode(dentry));
 	if (cache && ovl_dentry_version_get(dentry) == cache->version) {
 		WARN_ON(!cache->refcount);
@@ -698,7 +698,7 @@ static int ovl_iterate_real(struct file *file, struct dir_context *ctx)
 		.xinobits = ovl_xino_bits(dir->d_sb),
 	};
 
-    printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dir->d_name.name, dir->d_inode->i_ino); //HOON
+    //printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dir->d_name.name, dir->d_inode->i_ino); //HOON
 	if (rdt.xinobits && lower_layer)
 		rdt.fsid = lower_layer->fsid;
 
@@ -748,7 +748,7 @@ static int ovl_iterate(struct file *file, struct dir_context *ctx)
 		    (ovl_same_sb(dentry->d_sb) &&
 		     (ovl_is_impure_dir(file) ||
 		      OVL_TYPE_MERGE(ovl_path_type(dentry->d_parent))))) {
-            printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
+            //printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
 			return ovl_iterate_real(file, ctx);
 		}
 		return iterate_dir(od->realfile, ctx);
@@ -829,7 +829,6 @@ static int ovl_dir_fsync(struct file *file, loff_t start, loff_t end,
 	struct dentry *dentry = file->f_path.dentry;
 	struct file *realfile = od->realfile;
 
-    printk("Q_sh : %s tt\n",__func__); //HOON
 	/* Nothing to sync for lower */
 	if (!OVL_TYPE_UPPER(ovl_path_type(dentry)))
 		return 0;
@@ -890,7 +889,7 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 	struct file *realfile;
 	struct ovl_dir_file *od;
 	enum ovl_path_type type;  
-    //extern struct qsh_metadata qsh_mt; //HOON,test6
+    extern struct qsh_metadata qsh_mt; //HOON,test6
 	
     od = kzalloc(sizeof(struct ovl_dir_file), GFP_KERNEL);
 	if (!od)
@@ -908,7 +907,13 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 	}
 	od->realfile = realfile;
 	od->is_real = ovl_dir_is_real(file->f_path.dentry);
-    printk("Q_sh : %s_4, is_real : %d\n",__func__,od->is_real); //HOON 
+    //HOON
+    if(0 == qsh_mt.qsh_flag)
+    {
+        od->is_real = 0;
+        printk("Q_sh : %s_4, is_real : %d\n",__func__,od->is_real); //HOON 
+    }
+    //HOON
 	od->is_upper = OVL_TYPE_UPPER(type);
 	file->private_data = od;
 

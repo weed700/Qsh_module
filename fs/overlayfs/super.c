@@ -721,7 +721,6 @@ static int ovl_mount_dir_noesc(const char *name, struct path *path)
 		goto out;
 	}
 	err = kern_path(name, LOOKUP_FOLLOW, path);
-    printk("Q_sh : %s , name : %s\n",__func__,name); //HOON
 	if (err) {
 		pr_err("overlayfs: failed to resolve '%s': %i\n", name, err);
 		goto out;
@@ -996,7 +995,7 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     //HOON
     int err2;
     char* temp = "/root/qshdir/test";
-    char* temp2 = "qshdir";
+    //char* temp2 = "qshdir";
     struct path upperpath2 = { };
     struct path* qsh = &upperpath2;
     //HOON
@@ -1006,10 +1005,24 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     //HOON
     if(1 == qsh_mt.qsh_flag)
     {
-        qsh_mt.qsh_dir_name = temp2;     //HOON
+        //qsh_mt.qsh_dir_name = temp2;     //HOON
         err2 = ovl_mount_dir(temp, qsh); //HOON
+        if(err2)
+            goto out;
         qsh_mt.qsh_dentry = qsh->dentry; //HOON
         printk("Q_sh : %s , temp : %s, qsh_dentry : %s, ino : %lu\n",__func__, temp,qsh_mt.qsh_dentry->d_name.name, qsh_mt.qsh_dentry->d_inode->i_ino); //HOON
+
+        sb_rdonly(qsh->mnt->mnt_sb);
+        /*
+        qsh_mt.qsh_upper_mnt = clone_private_mount(qsh);
+        err2 = PTR_ERR(qsh_mt.qsh_upper_mnt);
+        if(IS_ERR(qsh_mt.qsh_upper_mnt)){
+            printk("Q_sh : %s_error\n",__func__);
+            goto out;
+        }
+	    qsh_mt.qsh_upper_mnt->mnt_flags &= ~(MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME);
+        */
+        path_put(&upperpath2);
     }
     //HOON
 	if (err)
@@ -1460,7 +1473,6 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 		}
 
 		err = ovl_get_upper(ofs, &upperpath);
-        printk("Q_sh : %s , upperpath.dentry : %s\n",__func__,upperpath.dentry->d_name.name); //HOON
 		if (err)
 			goto out_err;
         
@@ -1495,7 +1507,6 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 			ofs->workdir = NULL;
 			sb->s_flags |= SB_RDONLY;
 		}
-
 	}
 
 	/* Show index=off in /proc/mounts for forced r/o mount */
