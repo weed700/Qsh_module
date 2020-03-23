@@ -1,7 +1,7 @@
 #include "user_ll_qsh.h"
 
 #define SIG_TEST 44
-#define SPARE_DISK "/dev/sdb"
+#define SPARE_DISK "/dev/nvme2n1"
 
 Node* List = NULL;          //리스트 헤더
 Node* Current = NULL;       //리스트 탐색할 때 필요
@@ -60,7 +60,7 @@ int qsh_script_exec(unsigned long long size, char* c_path)
         {"dir=$dir$path_sl\n"},
         {"mkdir $dir\n"},
         {"chmod 755 $dir\n"},
-        {"(echo y;) | mkfs.ext4 $path\n"},
+        {"(echo y;) | mkfs.xfs -f $path\n"},
         {"mount $path $dir\n"},
     };  
 
@@ -72,7 +72,7 @@ int qsh_script_exec(unsigned long long size, char* c_path)
     sprintf(mkdir_tmp,"mkdir %s%s\n",c_path,base_dir);
     strcpy(sc[14],mkdir_tmp);
 
-    sprintf(sh_tmp,"mount $path %s%s",c_path,base_dir);  
+    sprintf(sh_tmp,"mount --bind $dir %s%s",c_path,base_dir);  
     strcpy(sc[15],sh_tmp);
 
     fp = fopen(shellpath,"w");
@@ -97,7 +97,7 @@ int qsh_script_exec(unsigned long long size, char* c_path)
   
     system(shellex);
     
-    remove(shellpath);
+    //remove(shellpath);
     free(sh_tmp);
     free(shellex);
 
@@ -165,7 +165,7 @@ int init_script()
     sprintf(shellex,"%s %s",shellpath,SPARE_DISK);    
     system(shellex);
 
-    remove(shellpath);
+//    remove(shellpath);
     free(shellex);
 
     return 0;

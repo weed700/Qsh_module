@@ -53,35 +53,30 @@ pid_t pid = 0;
 struct siginfo info;
 struct task_struct* ut;
 
-extern struct super_block *quotactl_block(const char __user *special, int cmd);
+//extern struct super_block *quotactl_block(const char __user *special, int cmd);
 
 /*kernel thread ##*/
-//static int kthread_ex(void* arg)
-//{
-//    
-//    //usr_app
-//    char *argv[] = {"/usr/bin/usr_mod_qsh",NULL, NULL};
-//    static char *envp[] = {
-//        "HOME=/",
-//        "TERM=linux",
-//        "PATH=/sbin:/bin:/usr/sbin:/usr/bin",NULL };
-//    
-// //   call_usermodehelper(argv[0], argv, envp,UMH_WAIT_PROC);
-//    
-//    while(!kthread_should_stop())
-//    {
-//        //printk("Q_sh : %s() : called \n", __func__);
-//        ssleep(1);
-//    }
-//    
-//    return 0;
-//}
-//
-int qsh_add(int a, int b)
+static int kthread_ex(void* arg)
 {
-    return a+b;
+    
+    //usr_app
+    char *argv[] = {"/usr/bin/usr_mod_qsh",NULL, NULL};
+    static char *envp[] = {
+        "HOME=/",
+        "TERM=linux",
+        "PATH=/sbin:/bin:/usr/sbin:/usr/bin",NULL };
+    
+    call_usermodehelper(argv[0], argv, envp,UMH_WAIT_EXEC);
+    
+    while(!kthread_should_stop())
+    {
+        printk("Q_sh : %s() : called \n", __func__);
+        ssleep(1);
+    }
+    
+    return 0;
 }
-EXPORT_SYMBOL(qsh_add);
+
 
 static int qshdrv_open(struct inode* inode, struct file* file)
 {
@@ -218,9 +213,9 @@ static int __init qsh_mod_init(void)
 {
     int re; 
     
-    printk("qsh_mt.qsh_flag = %d\n",qsh_mt.qsh_flag);
-    qsh_mt.qsh_flag = 0;
-    printk("qsh_mt.qsh_flag2 = %d\n",qsh_mt.qsh_flag);
+    //printk("qsh_mt.qsh_flag = %d\n",qsh_mt.qsh_flag);
+    //qsh_mt.qsh_flag = 0;
+    //printk("qsh_mt.qsh_flag2 = %d\n",qsh_mt.qsh_flag);
     dev_t dev = MKDEV(qshdrv_major, 0);
     qsh_class = class_create(THIS_MODULE,DEVICE_NAME);
 
@@ -250,8 +245,8 @@ static int __init qsh_mod_init(void)
     printk(KERN_ALERT "Q_sh : %s() done\n", __FUNCTION__);
     
     /*thread create*/ 
-//    if(g_th_id == NULL)
-//        g_th_id = (struct task_struct *)kthread_run(kthread_ex, NULL, "kthread_example");
+    if(g_th_id == NULL)
+        g_th_id = (struct task_struct *)kthread_run(kthread_ex, NULL, "kthread_example");
     
     return 0;
 }
@@ -260,7 +255,7 @@ static void __exit qsh_mod_finish(void)
 {
     int val = 1;
 
-    qsh_mt.qsh_flag = 1;
+    //qsh_mt.qsh_flag = 1;
     //cleanup
     device_destroy(qsh_class,MKDEV(qshdrv_major,0));
     cdev_del(QshDevs);
@@ -274,7 +269,7 @@ static void __exit qsh_mod_finish(void)
  
     if(g_th_id)
     {
-//        kthread_stop(g_th_id);
+        kthread_stop(g_th_id);
         g_th_id = NULL;
     }
     printk("Q_sh : %s() : Bye.\n", __func__);
