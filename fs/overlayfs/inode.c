@@ -153,24 +153,14 @@ int ovl_getattr(const struct path *path, struct kstat *stat,
 	struct ovl_layer *lower_layer = NULL;
 	int err;
 	bool metacopy_blocks = false;
-    //extern struct qsh_metadata qsh_mt; //HOON
 
-    printk("Q_sh : %s_1 dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
-	
-    /*
-    if(0 == qsh_mt.qsh_flag){
-        //dentry = qsh_mt.qsh_dentry;
-        //is_dir = S_ISDIR(dentry->d_inode->i_mode);
-        //samefs = ovl_same_sb(dentry->d_sb);
-        printk("Q_sh : %s_2 dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
-    }
-    */
+    //printk("Q_sh : %s_1 dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
     
     metacopy_blocks = ovl_is_metacopy_dentry(dentry);
 
 	type = ovl_path_real(dentry, &realpath);
 	old_cred = ovl_override_creds(dentry->d_sb);
-    printk("Q_sh : %s_2 dentry : %s, inode : %lu\n",__func__,realpath.dentry->d_name.name, realpath.dentry->d_inode->i_ino); //HOON
+    //printk("Q_sh : %s_2 dentry : %s, inode : %lu\n",__func__,realpath.dentry->d_name.name, realpath.dentry->d_inode->i_ino); //HOON
 	err = vfs_getattr(&realpath, stat, request_mask, flags);
 	if (err)
 		goto out;
