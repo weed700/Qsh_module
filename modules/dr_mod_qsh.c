@@ -1,5 +1,5 @@
 #include <linux/init.h>
-//#include <linux/moduleparam.h>  //kernel module parameter macro
+#include <linux/moduleparam.h>  //kernel module parameter macro
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/kernel.h>       //printk()
@@ -23,7 +23,7 @@
 
 #include <linux/syscalls.h>
 
-//#include "../fs/overlayfs/ovl_entry.h"
+#include "../fs/overlayfs/ovl_entry.h"
 
 #define SIG_TEST 44
 
@@ -129,8 +129,11 @@ long qshdrv_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
                 return -EFAULT;
             
             printk("Q_sh : _IOC_WRITE : projectID : %u path : %s con_path : %s\n",g_data_qsh.id, g_data_qsh.special, g_data_qsh.con_path);    
-            
+
             kill_fasync(&sigio_async_queue, SIGIO, POLL_IN);
+            //printk("Q_sh : copy before : %s, %s\n",qsh_mt.qsh_dir_name,g_data_qsh.con_path);
+            //strcpy(qsh_mt.qsh_dir_name,g_data_qsh.con_path);
+            //printk("Q_sh : copy after : %s, %s!\n",qsh_mt.qsh_dir_name, g_data_qsh.con_path);
             break;
         default:
             printk("Q_sh : %s unknown command...\n",__func__);
@@ -209,10 +212,11 @@ static struct class* qsh_class;
 static int __init qsh_mod_init(void)
 {
     int re; 
-    
+ 
     dev_t dev = MKDEV(qshdrv_major, 0);
     qsh_class = class_create(THIS_MODULE,DEVICE_NAME);
 
+    qsh_mt.qsh_flag = 0;
     /*character device create*/
     if(qshdrv_major)
         re = register_chrdev_region(dev, 1, DEVICE_NAME);

@@ -97,7 +97,7 @@ int qsh_script_exec(unsigned long long size, char* c_path)
   
     system(shellex);
     
-    //remove(shellpath);
+    remove(shellpath);
     free(sh_tmp);
     free(shellex);
 
@@ -165,7 +165,7 @@ int init_script()
     sprintf(shellex,"%s %s",shellpath,SPARE_DISK);    
     system(shellex);
 
-//    remove(shellpath);
+    remove(shellpath);
     free(shellex);
 
     return 0;
