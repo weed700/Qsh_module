@@ -21,6 +21,7 @@
 #include <linux/fdtable.h>
 #include <linux/ratelimit.h>
 #include <linux/exportfs.h>
+//#include <linux/delay.h> //HOON
 #include "overlayfs.h"
 
 #define OVL_COPY_UP_CHUNK_SIZE (1 << 20)
@@ -130,6 +131,7 @@ static int ovl_copy_up_data(struct path *old, struct path *new, loff_t len)
 	if (len == 0)
 		return 0;
 
+    printk("Q_sh : %s, old_name,ino : %s,%lu new_name,ino : %s,%lu\n",__func__,old->dentry->d_name.name,old->dentry->d_inode->i_ino, new->dentry->d_name.name, new->dentry->d_inode->i_ino); //HOON
 	old_file = ovl_path_open(old, O_LARGEFILE | O_RDONLY);
 	if (IS_ERR(old_file))
 		return PTR_ERR(old_file);
@@ -446,15 +448,30 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
 	int err;
 	struct dentry *upper;
 	struct inode *udir = d_inode(c->destdir);
+    //extern struct qsh_metadata qsh_mt; //HOON
 
+    
 	upper = lookup_one_len(c->destname.name, c->destdir, c->destname.len);
-	if (IS_ERR(upper))
+	printk("Q_sh : %s : udir : %lu, work : %lu, temp : %lu\n",__func__,udir->i_ino,d_inode(c->workdir)->i_ino, temp->d_inode->i_ino); //HOON
+    if (IS_ERR(upper)) 
 		return PTR_ERR(upper);
 
 	if (c->tmpfile)
 		err = ovl_do_link(temp, udir, upper);
-	else
-		err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0);
+	else{
+        printk("Q_sh : %s_else ovl_do_rename\n",__func__); //HOON
+        //HOON
+        /*
+        if(0 == qsh_mt.qsh_flag){
+            //printk("Q_sh : %s_qsh_1, upper : %s, udir : %lu\n",__func__,qsh_mt.qsh_dentry->d_name.name,qsh_mt.qsh_dentry->d_inode->i_ino); //HOON
+	        upper = lookup_one_len(c->destname.name, qsh_mt.qsh_dentry, c->destname.len); //HOON
+            udir = d_inode(qsh_mt.qsh_dentry); //HOON
+            //printk("Q_sh : %s_qsh, upper : %s, udir : %lu\n",__func__,upper->d_name.name,udir->i_ino); //HOON
+        }
+        */
+        //HOON
+        err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0);
+    }
 
 	if (!err)
 		*newdentry = dget(c->tmpfile ? upper : temp);
@@ -501,7 +518,9 @@ static int ovl_copy_up_inode(struct ovl_copy_up_ctx *c, struct dentry *temp)
 {
 	int err;
 
+    printk("Q_sh : %s, dentry_ino : %lu, dentry_name : %s\n",__func__,c->dentry->d_inode->i_ino, c->dentry->d_name.name); //HOON
 	err = ovl_copy_xattr(c->lowerpath.dentry, temp);
+
 	if (err)
 		return err;
 
@@ -514,25 +533,31 @@ static int ovl_copy_up_inode(struct ovl_copy_up_ctx *c, struct dentry *temp)
 	 */
     
 	if (c->origin) {
-		err = ovl_set_origin(c->dentry, c->lowerpath.dentry, temp);
-		if (err)
-			return err;
+        printk("Q_sh : %s_origin, dentry_ino : %lu, dentry_name : %s\n",__func__,c->dentry->d_inode->i_ino, c->dentry->d_name.name); //HOON
+        err = ovl_set_origin(c->dentry, c->lowerpath.dentry, temp);
+        if (err)
+            return err;
 	}
 
 	if (S_ISREG(c->stat.mode) && !c->metacopy) {
 		struct path upperpath, datapath;
 
+        printk("Q_sh : %si_if, dentry_ino : %lu, dentry_name : %s\n",__func__,c->dentry->d_inode->i_ino, c->dentry->d_name.name); //HOON
 		ovl_path_upper(c->dentry, &upperpath);
 		BUG_ON(upperpath.dentry != NULL);
+        printk("Q_sh : %s_be, dentry_ino : %lu, dentry_name : %s\n",__func__,upperpath.dentry->d_inode->i_ino, upperpath.dentry->d_name.name); //HOON
 		upperpath.dentry = temp;
+        printk("Q_sh : %s_af, dentry_ino : %lu, dentry_name : %s\n",__func__,upperpath.dentry->d_inode->i_ino, upperpath.dentry->d_name.name); //HOON
 
 		ovl_path_lowerdata(c->dentry, &datapath);
+        printk("Q_sh : %s_lower, dentry_ino : %lu, dentry_name : %s\n",__func__,datapath.dentry->d_inode->i_ino, datapath.dentry->d_name.name); //HOON
 		err = ovl_copy_up_data(&datapath, &upperpath, c->stat.size);
 		if (err)
 			return err;
 	}
 
 	if (c->metacopy) {
+        printk("Q_sh : %s_c->metacopy, dentry_ino : %lu, dentry_name : %s\n",__func__,c->dentry->d_inode->i_ino, c->dentry->d_name.name); //HOON
 		err = ovl_check_setxattr(c->dentry, temp, OVL_XATTR_METACOPY,
 					 NULL, 0, -EOPNOTSUPP);
 		if (err)
@@ -542,8 +567,9 @@ static int ovl_copy_up_inode(struct ovl_copy_up_ctx *c, struct dentry *temp)
 	inode_lock(temp->d_inode);
 	if (c->metacopy)
 		err = ovl_set_size(temp, &c->stat);
-	if (!err)
+	if (!err){
 		err = ovl_set_attr(temp, &c->stat);
+    }
 	inode_unlock(temp->d_inode);
 
 	return err;
@@ -558,24 +584,29 @@ static int ovl_copy_up_locked(struct ovl_copy_up_ctx *c)
 	int err;
 
 	temp = ovl_get_tmpfile(c);
-	if (IS_ERR(temp))
+	
+    if (IS_ERR(temp))
 		return PTR_ERR(temp);
 
-	err = ovl_copy_up_inode(c, temp);
-	if (err)
-		goto out;
+    printk("Q_sh : %s, dentry_ino : %lu, dentry_name : %s\n",__func__,temp->d_inode->i_ino, temp->d_name.name); //HOON
+    err = ovl_copy_up_inode(c, temp);
+    
+    if (err)
+        goto out;
 
 	if (S_ISDIR(c->stat.mode) && c->indexed) {
 		err = ovl_create_index(c->dentry, c->lowerpath.dentry, temp);
-		if (err)
-			goto out;
-	}
+        if (err)
+            goto out;
+    }
 
-	if (c->tmpfile) {
-		inode_lock_nested(udir, I_MUTEX_PARENT);
-		err = ovl_install_temp(c, temp, &newdentry);
-		inode_unlock(udir);
+    if (c->tmpfile) {
+        inode_lock_nested(udir, I_MUTEX_PARENT);
+	    printk("Q_sh : %s_if\n",__func__); //HOON
+        err = ovl_install_temp(c, temp, &newdentry);
+        inode_unlock(udir);
 	} else {
+	    printk("Q_sh : %s_else\n",__func__); //HOON
 		err = ovl_install_temp(c, temp, &newdentry);
 	}
 	if (err)
@@ -649,14 +680,16 @@ static int ovl_do_copy_up(struct ovl_copy_up_ctx *c)
 	/* Should we copyup with O_TMPFILE or with workdir? */
 	if (S_ISREG(c->stat.mode) && ofs->tmpfile) {
 		c->tmpfile = true;
+        printk("Q_sh : %s_if , dentry_ino : %lu, dentry_name : %s\n",__func__,c->dentry->d_inode->i_ino, c->dentry->d_name.name); //HOON
 		err = ovl_copy_up_locked(c);
 	} else {
 		err = ovl_lock_rename_workdir(c->workdir, c->destdir);
 		if (!err) {
-			err = ovl_copy_up_locked(c);
-			unlock_rename(c->workdir, c->destdir);
-		}
-	}
+            printk("Q_sh : %s_else , dentry_ino : %lu, dentry_name : %s\n",__func__,c->dentry->d_inode->i_ino, c->dentry->d_name.name); //HOON
+            err = ovl_copy_up_locked(c);
+            unlock_rename(c->workdir, c->destdir);
+        }
+    }
 
 
 	if (err)
@@ -667,15 +700,14 @@ static int ovl_do_copy_up(struct ovl_copy_up_ctx *c)
 
 	if (to_index) {
 		/* Initialize nlink for copy up of disconnected dentry */
-		err = ovl_set_nlink_upper(c->dentry);
-	} else {
-		struct inode *udir = d_inode(c->destdir);
+        err = ovl_set_nlink_upper(c->dentry);
+    } else {
+        struct inode *udir = d_inode(c->destdir);
 
 		/* Restore timestamps on parent (best effort) */
 		inode_lock(udir);
 		ovl_set_timestamps(c->destdir, &c->pstat);
 		inode_unlock(udir);
-
 		ovl_dentry_set_upper_alias(c->dentry);
 	}
 
@@ -740,28 +772,28 @@ static int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 		.workdir = ovl_workdir(dentry),
 	};
     
-	if (WARN_ON(!ctx.workdir))
-		return -EROFS;
+    if (WARN_ON(!ctx.workdir))
+        return -EROFS;
 
-	ovl_path_lower(dentry, &ctx.lowerpath);
-	err = vfs_getattr(&ctx.lowerpath, &ctx.stat,
-			  STATX_BASIC_STATS, AT_STATX_SYNC_AS_STAT);
-	if (err)
-		return err;
+    ovl_path_lower(dentry, &ctx.lowerpath);
+    err = vfs_getattr(&ctx.lowerpath, &ctx.stat,
+            STATX_BASIC_STATS, AT_STATX_SYNC_AS_STAT);
+    if (err)
+        return err;
 
-	ctx.metacopy = ovl_need_meta_copy_up(dentry, ctx.stat.mode, flags);
+    ctx.metacopy = ovl_need_meta_copy_up(dentry, ctx.stat.mode, flags);
 
-	if (parent) {
-		ovl_path_upper(parent, &parentpath);
-		ctx.destdir = parentpath.dentry;
-		ctx.destname = dentry->d_name;
+    if (parent) {
+        ovl_path_upper(parent, &parentpath);
+        ctx.destdir = parentpath.dentry;
+        ctx.destname = dentry->d_name;
 
-		err = vfs_getattr(&parentpath, &ctx.pstat,
-				  STATX_ATIME | STATX_MTIME,
-				  AT_STATX_SYNC_AS_STAT);
-		if (err)
-			return err;
-	}
+        err = vfs_getattr(&parentpath, &ctx.pstat,
+                STATX_ATIME | STATX_MTIME,
+                AT_STATX_SYNC_AS_STAT);
+        if (err)
+            return err;
+    }
 
 	/* maybe truncate regular file. this has no effect on dirs */
 	if (flags & O_TRUNC)
@@ -779,12 +811,18 @@ static int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 		if (err > 0)
 			err = 0;
 	} else {
-		if (!ovl_dentry_upper(dentry))
-			err = ovl_do_copy_up(&ctx);
-		if (!err && parent && !ovl_dentry_has_upper_alias(dentry))
-			err = ovl_link_up(&ctx);
-		if (!err && ovl_dentry_needs_data_copy_up_locked(dentry, flags))
+		if (!ovl_dentry_upper(dentry)){
+            printk("Q_sh : %s if\n",__func__); //HOON
+            err = ovl_do_copy_up(&ctx);
+        }
+        if (!err && parent && !ovl_dentry_has_upper_alias(dentry)){
+            printk("Q_sh : %s if_2\n",__func__); //HOON
+            err = ovl_link_up(&ctx);
+        }
+        if (!err && ovl_dentry_needs_data_copy_up_locked(dentry, flags)){
+            printk("Q_sh : %s if_3\n",__func__); //HOON
 			err = ovl_copy_up_meta_inode_data(&ctx);
+        }
 		ovl_copy_up_end(dentry);
 	}
 	do_delayed_call(&done);
@@ -798,6 +836,7 @@ int ovl_copy_up_flags(struct dentry *dentry, int flags)
 	const struct cred *old_cred = ovl_override_creds(dentry->d_sb);
 	bool disconnected = (dentry->d_flags & DCACHE_DISCONNECTED);
 
+    printk("Q_sh : %s , inode : %lu , dentry : %s\n",__func__,dentry->d_inode->i_ino, dentry->d_name.name); //HOON
 	/*
 	 * With NFS export, copy up can get called for a disconnected non-dir.
 	 * In this case, we will copy up lower inode to index dir without
@@ -814,22 +853,24 @@ int ovl_copy_up_flags(struct dentry *dentry, int flags)
 			break;
 
 		next = dget(dentry);
+        printk("Q_sh : %s_while , inode : %lu , dentry : %s\n",__func__,next->d_inode->i_ino, next->d_name.name); //HOON
 		/* find the topmost dentry not yet copied up */
 		for (; !disconnected;) {
 			parent = dget_parent(next);
+            printk("Q_sh : %s_for , inode : %lu , dentry : %s\n",__func__,parent->d_inode->i_ino, parent->d_name.name); //HOON
 
 			if (ovl_dentry_upper(parent))
 				break;
 
 			dput(next);
 			next = parent;
-		}
+        }
 
-		err = ovl_copy_up_one(parent, next, flags);
+        err = ovl_copy_up_one(parent, next, flags);
 
-		dput(parent);
-		dput(next);
-	}
+        dput(parent);
+        dput(next);
+    }
 	revert_creds(old_cred);
 
 	return err;

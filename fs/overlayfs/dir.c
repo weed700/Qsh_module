@@ -205,6 +205,7 @@ out:
 
 struct dentry *ovl_create_temp(struct dentry *workdir, struct ovl_cattr *attr)
 {
+    printk("Q_sh : %s, workdir : %s, workdir_ino : %lu\n",__func__,workdir->d_name.name,workdir->d_inode->i_ino); //HOON
 	return ovl_create_real(d_inode(workdir), ovl_lookup_temp(workdir),
 			       attr);
 }
@@ -313,7 +314,7 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
 	inode_lock_nested(udir, I_MUTEX_PARENT);
     //HOON
     if(1 == qsh_mt.qsh_flag){
-        printk("Q_sh : %s, qsh_flag : %d, upperdir_ino : %lu\n",__func__,qsh_mt.qsh_flag,upperdir->d_inode->i_ino);
+        printk("Q_sh : %s, qsh_flag : %d, upperdir_ino : %lu, dentry+name : %s\n",__func__,qsh_mt.qsh_flag,upperdir->d_inode->i_ino,dentry->d_name.name);
         newdentry = ovl_create_real(udir,
                 lookup_one_len(dentry->d_name.name,
                     upperdir,

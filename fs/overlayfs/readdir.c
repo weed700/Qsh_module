@@ -889,7 +889,7 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 	struct file *realfile;
 	struct ovl_dir_file *od;
 	enum ovl_path_type type;  
-    extern struct qsh_metadata qsh_mt; //HOON,test6
+    //extern struct qsh_metadata qsh_mt; //HOON,test6
 	
     od = kzalloc(sizeof(struct ovl_dir_file), GFP_KERNEL);
 	if (!od)
@@ -908,11 +908,13 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 	od->realfile = realfile;
 	od->is_real = ovl_dir_is_real(file->f_path.dentry);
     //HOON
+    /*
     if(0 == qsh_mt.qsh_flag)
     {
         od->is_real = 0;
         printk("Q_sh : %s_4, is_real : %d\n",__func__,od->is_real); //HOON 
     }
+    */
     //HOON
 	od->is_upper = OVL_TYPE_UPPER(type);
 	file->private_data = od;

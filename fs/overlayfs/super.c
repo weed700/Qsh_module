@@ -720,11 +720,13 @@ static int ovl_mount_dir_noesc(const char *name, struct path *path)
 		pr_err("overlayfs: empty lowerdir\n");
 		goto out;
 	}
+    printk("Q_sh : %s_1, name : %s\n",__func__,name); //HOON
 	err = kern_path(name, LOOKUP_FOLLOW, path);
 	if (err) {
 		pr_err("overlayfs: failed to resolve '%s': %i\n", name, err);
 		goto out;
 	}
+    printk("Q_sh : %s_2, name : %s\n",__func__,name); //HOON
 	err = -EINVAL;
 	if (ovl_dentry_weird(path->dentry)) {
 		pr_err("overlayfs: filesystem on '%s' not supported\n", name);
@@ -1351,12 +1353,15 @@ static struct ovl_entry *ovl_get_lowerstack(struct super_block *sb,
 	struct ovl_entry *oe;
 
 	err = -ENOMEM;
+    strcat(ofs->config.lowerdir,":/root/qshdir/test/"); //HOON
 	lowertmp = kstrdup(ofs->config.lowerdir, GFP_KERNEL);
+    printk("Q_sh : %s,  lower: %s, upper: %s, work: %s \n",__func__,ofs->config.lowerdir,ofs->config.upperdir,ofs->config.workdir); //HOON
 	if (!lowertmp)
 		goto out_err;
 
 	err = -EINVAL;
 	stacklen = ovl_split_lowerdirs(lowertmp);
+    printk("Q_sh : %s_2, stacklen : %u \n",__func__,stacklen); //HOON
 	if (stacklen > OVL_MAX_STACK) {
 		pr_err("overlayfs: too many lower directories, limit is %d\n",
 		       OVL_MAX_STACK);
@@ -1371,6 +1376,7 @@ static struct ovl_entry *ovl_get_lowerstack(struct super_block *sb,
 	}
 
 	err = -ENOMEM;
+    
 	stack = kcalloc(stacklen, sizeof(struct path), GFP_KERNEL);
 	if (!stack)
 		goto out_err;
@@ -1378,6 +1384,7 @@ static struct ovl_entry *ovl_get_lowerstack(struct super_block *sb,
 	err = -EINVAL;
 	lower = lowertmp;
 	for (numlower = 0; numlower < stacklen; numlower++) {
+        printk("Q_sh : %s_3, lower : %s\n",__func__,lower); //HOON
 		err = ovl_lower_dir(lower, &stack[numlower], ofs,
 				    &sb->s_stack_depth, &remote);
 		if (err)
@@ -1385,6 +1392,7 @@ static struct ovl_entry *ovl_get_lowerstack(struct super_block *sb,
 
 		lower = strchr(lower, '\0') + 1;
 	}
+        printk("Q_sh : %s_4, lower : %u\n",__func__,numlower); //HOON
 
 	err = -EINVAL;
 	sb->s_stack_depth++;
@@ -1488,6 +1496,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 
 	}
 	oe = ovl_get_lowerstack(sb, ofs);
+    printk("Q_sh : %s : ovl_get_lowerstack end\n",__func__); //HOON
 	err = PTR_ERR(oe);
 	if (IS_ERR(oe))
 		goto out_err;

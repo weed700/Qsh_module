@@ -468,7 +468,7 @@ static ssize_t ovl_copyfile(struct file *file_in, loff_t pos_in,
 	struct fd real_in, real_out;
 	const struct cred *old_cred;
 	ssize_t ret;
-    
+
 	ret = ovl_real_fdget(file_out, &real_out);
 	if (ret)
 		return ret;
