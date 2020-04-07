@@ -6,7 +6,6 @@ static int __init hello_world_init(void)
 {
        
     printk(KERN_INFO "Q_sh : %s() : called\n", __FUNCTION__);
-    
     return 0;
 }
 
