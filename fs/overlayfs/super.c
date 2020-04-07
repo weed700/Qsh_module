@@ -1353,7 +1353,12 @@ static struct ovl_entry *ovl_get_lowerstack(struct super_block *sb,
 	struct ovl_entry *oe;
 
 	err = -ENOMEM;
-    strcat(ofs->config.lowerdir,":/root/qshdir/test/"); //HOON
+    //HOON
+    if(NULL != strstr(ofs->config.lowerdir,"overlay2"))
+        strcat(ofs->config.lowerdir,":/root/qshdir/test/"); //HOON
+    else
+        printk("Q_sh : %s_overlay2 x\n",__func__); //HOON
+    //HOON
 	lowertmp = kstrdup(ofs->config.lowerdir, GFP_KERNEL);
     printk("Q_sh : %s,  lower: %s, upper: %s, work: %s \n",__func__,ofs->config.lowerdir,ofs->config.upperdir,ofs->config.workdir); //HOON
 	if (!lowertmp)

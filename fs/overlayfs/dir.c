@@ -305,6 +305,7 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     if(0 == qsh_mt.qsh_flag)
     {
         printk("Q_sh : %s, udir change\n",__func__); //HOON
+        //qsh_mt.qsh_dentry->d_inode->i_rwsem = udir->i_rwsem;
         udir = qsh_mt.qsh_dentry->d_inode;
     }
     //HOON

@@ -448,11 +448,11 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
 	int err;
 	struct dentry *upper;
 	struct inode *udir = d_inode(c->destdir);
-    //extern struct qsh_metadata qsh_mt; //HOON
+    extern struct qsh_metadata qsh_mt; //HOON
 
+    upper = lookup_one_len(c->destname.name, c->destdir, c->destname.len);
     
-	upper = lookup_one_len(c->destname.name, c->destdir, c->destname.len);
-	printk("Q_sh : %s : udir : %lu, work : %lu, temp : %lu\n",__func__,udir->i_ino,d_inode(c->workdir)->i_ino, temp->d_inode->i_ino); //HOON
+    printk("Q_sh : %s : udir : %lu, work : %lu, temp : %lu qsh_flag : %d\n",__func__,udir->i_ino,d_inode(c->workdir)->i_ino, temp->d_inode->i_ino,qsh_mt.qsh_flag); //HOON
     if (IS_ERR(upper)) 
 		return PTR_ERR(upper);
 
@@ -461,16 +461,16 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
 	else{
         printk("Q_sh : %s_else ovl_do_rename\n",__func__); //HOON
         //HOON
-        /*
+        
         if(0 == qsh_mt.qsh_flag){
-            //printk("Q_sh : %s_qsh_1, upper : %s, udir : %lu\n",__func__,qsh_mt.qsh_dentry->d_name.name,qsh_mt.qsh_dentry->d_inode->i_ino); //HOON
-	        upper = lookup_one_len(c->destname.name, qsh_mt.qsh_dentry, c->destname.len); //HOON
-            udir = d_inode(qsh_mt.qsh_dentry); //HOON
-            //printk("Q_sh : %s_qsh, upper : %s, udir : %lu\n",__func__,upper->d_name.name,udir->i_ino); //HOON
-        }
-        */
+            printk("Q_sh : %s_qsh_1, upper : %s, udir : %lu\n",__func__,qsh_mt.qsh_dentry->d_name.name,qsh_mt.qsh_dentry->d_inode->i_ino); //HOON
+            vfs_mkdir(udir,upper,udir->i_mode);
+            qsh_mt.qsh_dentry = upper;
+            printk("Q_sh : %s_qsh, upper : %s, udir : %lu, qsh_dentry : %s\n",__func__,upper->d_name.name,udir->i_ino,qsh_mt.qsh_dentry->d_name.name); //HOON
+        }else{
         //HOON
-        err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0);
+            err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0);
+        }
     }
 
 	if (!err)
@@ -771,6 +771,7 @@ static int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 		.dentry = dentry,
 		.workdir = ovl_workdir(dentry),
 	};
+    extern struct qsh_metadata qsh_mt; //HOON
     
     if (WARN_ON(!ctx.workdir))
         return -EROFS;
@@ -784,9 +785,18 @@ static int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
     ctx.metacopy = ovl_need_meta_copy_up(dentry, ctx.stat.mode, flags);
 
     if (parent) {
-        ovl_path_upper(parent, &parentpath);
+        //HOON
+        if(0 == qsh_mt.qsh_flag)
+        {
+            parentpath.dentry = qsh_mt.qsh_dentry;
+            printk("Q_sh : %s, qsh dentry change\n",__func__);
+        }else{
+            ovl_path_upper(parent, &parentpath);
+        }
+        //HOON
         ctx.destdir = parentpath.dentry;
         ctx.destname = dentry->d_name;
+        printk("Q_sh : %s, destdir : %s, destname : %s\n",__func__,ctx.destdir->d_name.name,ctx.destname.name); //HOON
 
         err = vfs_getattr(&parentpath, &ctx.pstat,
                 STATX_ATIME | STATX_MTIME,
