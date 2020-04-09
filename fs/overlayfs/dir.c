@@ -626,10 +626,6 @@ static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
 		.link = link,
 	};
 
-    //HOON
-    //if(0 == strcmp(dentry->d_name.name,"qsh.a"))
-    //    printk("Q_sh : %s  path : %s\n",__func__,dentry->d_parent->d_parent->d_name.name);
-    //HOON
 	err = ovl_want_write(dentry);
 	if (err)
 		goto out;
@@ -648,6 +644,7 @@ static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
 	attr.mode = inode->i_mode;
 
 	err = ovl_create_or_link(dentry, inode, &attr, false);
+    printk("Q_sh : %s, dentry : %s,%lu",__func__,dentry->d_name.name,dentry->d_inode->i_ino); //HOON
 	/* Did we end up using the preallocated inode? */
 	if (inode != d_inode(dentry))
 		iput(inode);

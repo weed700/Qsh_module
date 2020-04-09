@@ -108,6 +108,7 @@ struct ovl_inode {
 struct qsh_metadata{
     int qsh_flag;
     struct dentry* qsh_dentry;
+    struct dentry* qsh_dentry_org;
 };
 //HOON
 

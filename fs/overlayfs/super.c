@@ -258,6 +258,7 @@ static int ovl_sync_fs(struct super_block *sb, int wait)
 	struct super_block *upper_sb;
 	int ret;
 
+    printk("Q_sh : %s\n",__func__); //HOON
 	if (!ofs->upper_mnt)
 		return 0;
 
@@ -1012,6 +1013,7 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
         if(err2)
             goto out;
         qsh_mt.qsh_dentry = qsh->dentry; //HOON
+        qsh_mt.qsh_dentry_org = qsh->dentry; //HOON 
         printk("Q_sh : %s , temp : %s, qsh_dentry : %s, ino : %lu\n",__func__, temp,qsh_mt.qsh_dentry->d_name.name, qsh_mt.qsh_dentry->d_inode->i_ino); //HOON
 
         sb_rdonly(qsh->mnt->mnt_sb);

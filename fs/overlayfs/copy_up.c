@@ -21,7 +21,6 @@
 #include <linux/fdtable.h>
 #include <linux/ratelimit.h>
 #include <linux/exportfs.h>
-//#include <linux/delay.h> //HOON
 #include "overlayfs.h"
 
 #define OVL_COPY_UP_CHUNK_SIZE (1 << 20)
@@ -788,7 +787,7 @@ static int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
         //HOON
         if(0 == qsh_mt.qsh_flag)
         {
-            parentpath.dentry = qsh_mt.qsh_dentry;
+            parentpath.dentry = qsh_mt.qsh_dentry_org;
             printk("Q_sh : %s, qsh dentry change\n",__func__);
         }else{
             ovl_path_upper(parent, &parentpath);
