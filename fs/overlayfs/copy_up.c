@@ -447,11 +447,15 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
 	int err;
 	struct dentry *upper;
 	struct inode *udir = d_inode(c->destdir);
-    extern struct qsh_metadata qsh_mt; //HOON
+    //HOON
+    struct dentry *qsh_destdir;
+    struct dentry *qsh_upper;
+    struct inode *qsh_udir;
+    //HOON
 
     upper = lookup_one_len(c->destname.name, c->destdir, c->destname.len);
     
-    printk("Q_sh : %s : udir : %lu, work : %lu, temp : %lu qsh_flag : %d\n",__func__,udir->i_ino,d_inode(c->workdir)->i_ino, temp->d_inode->i_ino,qsh_mt.qsh_flag); //HOON
+    printk("Q_sh : %s : udir : %lu, work : %lu, temp : %lu\n",__func__,udir->i_ino,d_inode(c->workdir)->i_ino, temp->d_inode->i_ino); //HOON
     if (IS_ERR(upper)) 
 		return PTR_ERR(upper);
 
@@ -459,17 +463,22 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
 		err = ovl_do_link(temp, udir, upper);
 	else{
         printk("Q_sh : %s_else ovl_do_rename\n",__func__); //HOON
+        err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0);
+        //HOON /*qsh dentry mkdir*/
+        printk("Q_sh : %s, parent %s_%lu\n",__func__,c->parent->d_name.name,c->parent->d_inode->i_ino); //HOON
+        qsh_destdir = qsh_dentry_dereference(QSH_I(d_inode(c->parent)));
+        printk("Q_sh : %s, qsh %s_%lu\n",__func__,qsh_destdir->d_name.name,qsh_destdir->d_inode->i_ino); //HOON
+        //qsh_destdir->d_inode->i_rwsem = c->destdir->d_inode->i_rwsem;
+        qsh_udir = d_inode(qsh_destdir);
+	    inode_lock_nested(qsh_udir, I_MUTEX_PARENT);
+        qsh_upper = lookup_one_len(c->destname.name, qsh_destdir, c->destname.len);
+        vfs_mkdir(qsh_udir,qsh_upper,qsh_udir->i_mode);
+        printk("Q_sh : %s, mkdir success\n",__func__); //HOON
+        QSH_I(d_inode(c->dentry))->qsh_dentry = qsh_upper;
+        printk("Q_sh : %s, QSH_I success dentry : %lu_%s, qsh_upper : %lu_%s\n",__func__,c->dentry->d_inode->i_ino,c->dentry->d_name.name, qsh_upper->d_inode->i_ino, qsh_upper->d_name.name); //HOON
+        dput(qsh_upper);
+	    inode_unlock(qsh_udir);
         //HOON
-        
-        if(0 == qsh_mt.qsh_flag){
-            printk("Q_sh : %s_qsh_1, upper : %s, udir : %lu\n",__func__,qsh_mt.qsh_dentry->d_name.name,qsh_mt.qsh_dentry->d_inode->i_ino); //HOON
-            vfs_mkdir(udir,upper,udir->i_mode);
-            qsh_mt.qsh_dentry = upper;
-            printk("Q_sh : %s_qsh, upper : %s, udir : %lu, qsh_dentry : %s\n",__func__,upper->d_name.name,udir->i_ino,qsh_mt.qsh_dentry->d_name.name); //HOON
-        }else{
-        //HOON
-            err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0);
-        }
     }
 
 	if (!err)
@@ -770,7 +779,6 @@ static int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 		.dentry = dentry,
 		.workdir = ovl_workdir(dentry),
 	};
-    extern struct qsh_metadata qsh_mt; //HOON
     
     if (WARN_ON(!ctx.workdir))
         return -EROFS;
@@ -784,15 +792,8 @@ static int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
     ctx.metacopy = ovl_need_meta_copy_up(dentry, ctx.stat.mode, flags);
 
     if (parent) {
-        //HOON
-        if(0 == qsh_mt.qsh_flag)
-        {
-            parentpath.dentry = qsh_mt.qsh_dentry_org;
-            printk("Q_sh : %s, qsh dentry change\n",__func__);
-        }else{
-            ovl_path_upper(parent, &parentpath);
-        }
-        //HOON
+        ovl_path_upper(parent, &parentpath);
+        
         ctx.destdir = parentpath.dentry;
         ctx.destname = dentry->d_name;
         printk("Q_sh : %s, destdir : %s, destname : %s\n",__func__,ctx.destdir->d_name.name,ctx.destname.name); //HOON
@@ -860,7 +861,7 @@ int ovl_copy_up_flags(struct dentry *dentry, int flags)
 
 		if (ovl_already_copied_up(dentry, flags))
 			break;
-
+        
 		next = dget(dentry);
         printk("Q_sh : %s_while , inode : %lu , dentry : %s\n",__func__,next->d_inode->i_ino, next->d_name.name); //HOON
 		/* find the topmost dentry not yet copied up */
@@ -876,6 +877,7 @@ int ovl_copy_up_flags(struct dentry *dentry, int flags)
         }
 
         err = ovl_copy_up_one(parent, next, flags);
+        printk("Q_sh : %s , end_err = %d\n",__func__,err); //HOON
 
         dput(parent);
         dput(next);

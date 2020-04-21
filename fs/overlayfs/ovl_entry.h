@@ -109,7 +109,19 @@ struct qsh_metadata{
     int qsh_flag;
     struct dentry* qsh_dentry;
     struct dentry* qsh_dentry_org;
+    struct inode qsh_vfs_inode;
+    struct file* qsh_file;
 };
+
+static inline struct qsh_metadata *QSH_I(struct inode *inode)
+{
+	return container_of(inode, struct qsh_metadata, qsh_vfs_inode);
+}
+
+static inline struct dentry *qsh_dentry_dereference(struct qsh_metadata *qi)
+{
+	return READ_ONCE(qi->qsh_dentry);
+}
 //HOON
 
 static inline struct ovl_inode *OVL_I(struct inode *inode)

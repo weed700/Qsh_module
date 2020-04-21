@@ -192,10 +192,10 @@ enum ovl_path_type ovl_path_real(struct dentry *dentry, struct path *path)
 
 struct dentry *ovl_dentry_upper(struct dentry *dentry)
 {
-    extern struct qsh_metadata qsh_mt; //HOON
+    //extern struct qsh_metadata qsh_mt; //HOON
     //HOON
-    if(0 == qsh_mt.qsh_flag)
-        printk("Q_sh : %s dentry_name : %s, dentry_ino : %lu\n",__func__,dentry->d_name.name,dentry->d_inode->i_ino);
+    //if(0 == qsh_mt.qsh_flag)
+     printk("Q_sh : %s dentry_name : %s, dentry_ino : %lu\n",__func__,dentry->d_name.name,dentry->d_inode->i_ino);
     //HOON
 	return ovl_upperdentry_dereference(OVL_I(d_inode(dentry)));
 }

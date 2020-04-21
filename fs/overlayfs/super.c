@@ -998,7 +998,6 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     //HOON
     int err2;
     char* temp = "/root/qshdir/test";
-    //char* temp2 = "qshdir";
     struct path upperpath2 = { };
     struct path* qsh = &upperpath2;
     //HOON
@@ -1008,25 +1007,15 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     //HOON
     if(1 == qsh_mt.qsh_flag)
     {
-        //qsh_mt.qsh_dir_name = temp2;     //HOON
         err2 = ovl_mount_dir(temp, qsh); //HOON
         if(err2)
             goto out;
         qsh_mt.qsh_dentry = qsh->dentry; //HOON
-        qsh_mt.qsh_dentry_org = qsh->dentry; //HOON 
+        qsh_mt.qsh_dentry_org = qsh_mt.qsh_dentry;
         printk("Q_sh : %s , temp : %s, qsh_dentry : %s, ino : %lu\n",__func__, temp,qsh_mt.qsh_dentry->d_name.name, qsh_mt.qsh_dentry->d_inode->i_ino); //HOON
 
-        sb_rdonly(qsh->mnt->mnt_sb);
-        /*
-        qsh_mt.qsh_upper_mnt = clone_private_mount(qsh);
-        err2 = PTR_ERR(qsh_mt.qsh_upper_mnt);
-        if(IS_ERR(qsh_mt.qsh_upper_mnt)){
-            printk("Q_sh : %s_error\n",__func__);
-            goto out;
-        }
-	    qsh_mt.qsh_upper_mnt->mnt_flags &= ~(MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME);
-        */
-        path_put(&upperpath2);
+        //sb_rdonly(qsh->mnt->mnt_sb);
+        //path_put(&upperpath2);
     }
     //HOON
 	if (err)
@@ -1573,6 +1562,11 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 		       ovl_dentry_lower(root_dentry), NULL);
     
 	sb->s_root = root_dentry;
+    
+    //HOON
+    printk("Q_sh : %s, root_dentry : %s_%lu\n",__func__,root_dentry->d_name.name,root_dentry->d_inode->i_ino);
+    QSH_I(d_inode(root_dentry))->qsh_dentry = qsh_mt.qsh_dentry_org;
+    //HOON
 
 	return 0;
 

@@ -770,6 +770,7 @@ int ovl_path_next(int idx, struct dentry *dentry, struct path *path)
 			return oe->numlower ? 1 : -1;
 		idx++;
 	}
+    printk("Q_sh : %s, dentry : %s, ino : %lu idx : %d\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino,idx); //HOON
 	BUG_ON(idx > oe->numlower);
 	path->dentry = oe->lowerstack[idx - 1].dentry;
 	path->mnt = oe->lowerstack[idx - 1].layer->mnt;
@@ -836,9 +837,10 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
     upperdir = ovl_dentry_upper(dentry->d_parent);
     //HOON
     //if(0 == qsh_mt.qsh_flag)
-    //    printk("Q_sh : %s, name : %s, ino : %lu\n",__func__,upperdir->d_name.name,upperdir->d_inode->i_ino);
+    printk("Q_sh : %s_start \n",__func__);
     //HOON
     if (upperdir) {
+        printk("Q_sh : %s_start, name : %s, ino : %lu\n",__func__,upperdir->d_name.name,upperdir->d_inode->i_ino); //HOON
         
         err = ovl_lookup_layer(upperdir, &d, &upperdentry);
         
@@ -1080,6 +1082,7 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
 		dput(origin_path->dentry);
 		kfree(origin_path);
 	}
+    printk("Q_sh : %s_end \n",__func__);
 	dput(index);
 	kfree(stack);
 	kfree(d.redirect);

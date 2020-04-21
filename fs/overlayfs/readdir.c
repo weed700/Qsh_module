@@ -318,7 +318,6 @@ static inline int ovl_dir_read(struct path *realpath,
 		err = ovl_check_whiteouts(realpath->dentry, rdd);
 
 	fput(realfile);
-
 	return err;
 }
 
@@ -369,10 +368,11 @@ static int ovl_dir_read_merged(struct dentry *dentry, struct list_head *list,
 	};
 	int idx, next;
     
-    //printk("Q_sh : %s, dentry : %s, ino : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
+    printk("Q_sh : %s, dentry : %s, ino : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
 
 	for (idx = 0; idx != -1; idx = next) {
 		next = ovl_path_next(idx, dentry, &realpath);
+        printk("Q_sh : %s_%d, dentry : %s, ino : %lu\n",__func__,idx,realpath.dentry->d_name.name, realpath.dentry->d_inode->i_ino); //HOON
 		rdd.is_upper = ovl_dentry_upper(dentry) == realpath.dentry;
 
 		if (next != -1) {
@@ -412,7 +412,7 @@ static struct ovl_dir_cache *ovl_cache_get(struct dentry *dentry)
 	int res;
 	struct ovl_dir_cache *cache;
 
-    //printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
+    printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
 	cache = ovl_dir_cache(d_inode(dentry));
 	if (cache && ovl_dentry_version_get(dentry) == cache->version) {
 		WARN_ON(!cache->refcount);
@@ -698,7 +698,7 @@ static int ovl_iterate_real(struct file *file, struct dir_context *ctx)
 		.xinobits = ovl_xino_bits(dir->d_sb),
 	};
 
-    //printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dir->d_name.name, dir->d_inode->i_ino); //HOON
+    printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dir->d_name.name, dir->d_inode->i_ino); //HOON
 	if (rdt.xinobits && lower_layer)
 		rdt.fsid = lower_layer->fsid;
 
@@ -734,6 +734,10 @@ static int ovl_iterate(struct file *file, struct dir_context *ctx)
 	struct dentry *dentry = file->f_path.dentry;
 	struct ovl_cache_entry *p;
 	int err;
+    extern struct qsh_metadata qsh_mt; //HOON
+    //struct dir_context* qsh_ctx = kmalloc(sizeof(struct dir_context),GFP_KERNEL);//HOON
+
+    printk("Q_sh : %s, dentry : %s, ino : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
 
 	if (!ctx->pos)
 		ovl_dir_reset(file);
@@ -748,9 +752,11 @@ static int ovl_iterate(struct file *file, struct dir_context *ctx)
 		    (ovl_same_sb(dentry->d_sb) &&
 		     (ovl_is_impure_dir(file) ||
 		      OVL_TYPE_MERGE(ovl_path_type(dentry->d_parent))))) {
-            //printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
+            
+            printk("Q_sh : %s if in\n",__func__); //HOON
 			return ovl_iterate_real(file, ctx);
 		}
+        printk("Q_sh : %s else\n",__func__); //HOON
 		return iterate_dir(od->realfile, ctx);
 	}
 
@@ -779,6 +785,19 @@ static int ovl_iterate(struct file *file, struct dir_context *ctx)
 		od->cursor = p->l_node.next;
 		ctx->pos++;
 	}
+    //HOON
+    
+    if(0 == qsh_mt.qsh_flag)
+    {
+        printk("Q_sh : %s qsh_flag in\n",__func__); //HOON
+        //memcpy(qsh_ctx,ctx,sizeof(struct dir_context));
+        if(qsh_mt.qsh_file)
+            iterate_dir(qsh_mt.qsh_file, ctx);
+        //kfree(qsh_ctx);
+        printk("Q_sh : %s qsh_flag end\n",__func__); //HOON
+    }
+    
+    //HOON
 	return 0;
 }
 
@@ -890,7 +909,8 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 	struct file *realfile;
 	struct ovl_dir_file *od;
 	enum ovl_path_type type;  
-    //extern struct qsh_metadata qsh_mt; //HOON,test6
+    extern struct qsh_metadata qsh_mt; //HOON
+    struct path qshpath; //HOON
 	
     od = kzalloc(sizeof(struct ovl_dir_file), GFP_KERNEL);
 	if (!od)
@@ -899,7 +919,15 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
     printk("Q_sh : %s, dentry : %s, ino : %lu\n",__func__,file->f_path.dentry->d_name.name, file->f_path.dentry->d_inode->i_ino); //HOON
 	type = ovl_path_real(file->f_path.dentry, &realpath);
 	realfile = ovl_path_open(&realpath, file->f_flags);
-    printk("Q_sh : %s_2, dentry : %s, ino : %lu\n",__func__,realpath.dentry->d_name.name, realpath.dentry->d_inode->i_ino); //HOON
+    printk("Q_sh : %s_2, dentry : %s, ino : %lu, flags : %d\n",__func__,realpath.dentry->d_name.name, realpath.dentry->d_inode->i_ino,file->f_flags); //HOON
+    //HOON
+    if(0 == qsh_mt.qsh_flag){
+        qshpath.dentry = qsh_dentry_dereference(QSH_I(d_inode(file->f_path.dentry)));
+        qsh_mt.qsh_file = ovl_path_open(&qshpath,file->f_flags);
+        printk("Q_sh : %s_qsh, dentry : %s, ino : %lu\n",__func__,qsh_mt.qsh_file->f_path.dentry->d_name.name, qsh_mt.qsh_file->f_path.dentry->d_inode->i_ino); //HOON
+    }
+    //HOON
+    
     printk("Q_sh : %s_3, dentry : %s, ino : %lu\n",__func__,realfile->f_path.dentry->d_name.name, realfile->f_path.dentry->d_inode->i_ino); //HOON
     
     if (IS_ERR(realfile)) {
@@ -908,15 +936,6 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 	}
 	od->realfile = realfile;
 	od->is_real = ovl_dir_is_real(file->f_path.dentry);
-    //HOON
-    /*
-    if(0 == qsh_mt.qsh_flag)
-    {
-        od->is_real = 0;
-        printk("Q_sh : %s_4, is_real : %d\n",__func__,od->is_real); //HOON 
-    }
-    */
-    //HOON
 	od->is_upper = OVL_TYPE_UPPER(type);
 	file->private_data = od;
 
