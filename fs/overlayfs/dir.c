@@ -123,7 +123,8 @@ static int ovl_mkdir_real(struct inode *dir, struct dentry **newdentry,
 	struct dentry *d, *dentry = *newdentry;
 
 	err = ovl_do_mkdir(dir, dentry, mode);
-	if (err)
+	
+    if (err)
 		return err;
 
 	if (likely(!d_unhashed(dentry)))
@@ -302,16 +303,18 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
 	int err;
     extern struct qsh_metadata qsh_mt; //HOON
     struct inode *qsh_udir; //HOON
+    struct dentry *qsh_dentry_temp;
     //HOON
     if(0 == qsh_mt.qsh_flag)
     {
         printk("Q_sh : %s, dentry_p : %lu_%s udir change start\n",__func__,dentry->d_parent->d_inode->i_ino,dentry->d_parent->d_name.name); //HOON
-        qsh_mt.qsh_dentry = qsh_dentry_dereference(QSH_I(d_inode(dentry->d_parent)));
-        printk("Q_sh : %s, mid_1 %lu_%s\n",__func__,qsh_mt.qsh_dentry->d_inode->i_ino,qsh_mt.qsh_dentry->d_name.name); //HOON
-        qsh_udir = qsh_mt.qsh_dentry->d_inode;
+        qsh_dentry_temp = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
+        printk("Q_sh : %s, mid_1 %lu_%s\n",__func__,qsh_dentry_temp->d_inode->i_ino,qsh_dentry_temp->d_name.name); //HOON
+        //qsh_mt.qsh_dentry = qsh_temp;
+        qsh_udir = qsh_dentry_temp->d_inode;
         printk("Q_sh : %s, mid_2\n",__func__); //HOON
         inode_lock_nested(qsh_udir, I_MUTEX_PARENT2);
-        printk("Q_sh : %s, udir change %s_%lu end\n",__func__,qsh_mt.qsh_dentry->d_name.name,qsh_udir->i_ino); //HOON
+        printk("Q_sh : %s, udir change %s_%lu end\n",__func__,qsh_dentry_temp->d_name.name,qsh_udir->i_ino); //HOON
     }
 
     if (!attr->hardlink && !IS_POSIXACL(udir))
@@ -334,7 +337,7 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
         printk("Q_sh : %s, ovl_create_real start\n",__func__); //HOON
         newdentry = ovl_create_real(qsh_udir,
                 lookup_one_len(dentry->d_name.name,
-                        qsh_mt.qsh_dentry,
+                        qsh_dentry_temp,
                         dentry->d_name.len),
                     attr);    
         printk("Q_sh : %s, qsh_flag : %d, newdentry_ino : %lu, newp_ino : %lu, newp_name : %s\n",__func__,qsh_mt.qsh_flag,newdentry->d_inode->i_ino, newdentry->d_parent->d_inode->i_ino,newdentry->d_parent->d_name.name);

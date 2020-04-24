@@ -451,6 +451,7 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
     struct dentry *qsh_destdir;
     struct dentry *qsh_upper;
     struct inode *qsh_udir;
+    struct dentry *d, *check_d;
     //HOON
 
     upper = lookup_one_len(c->destname.name, c->destdir, c->destname.len);
@@ -465,18 +466,29 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
         printk("Q_sh : %s_else ovl_do_rename\n",__func__); //HOON
         err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0);
         //HOON /*qsh dentry mkdir*/
-        printk("Q_sh : %s, parent %s_%lu\n",__func__,c->parent->d_name.name,c->parent->d_inode->i_ino); //HOON
-        qsh_destdir = qsh_dentry_dereference(QSH_I(d_inode(c->parent)));
+        printk("Q_sh : %s, parent %s_%lu tempfile : %d\n",__func__,c->parent->d_name.name,c->parent->d_inode->i_ino,c->tmpfile); //HOON
+        qsh_destdir = qsh_dentry_dereference(OVL_I(d_inode(c->parent)));
         printk("Q_sh : %s, qsh %s_%lu\n",__func__,qsh_destdir->d_name.name,qsh_destdir->d_inode->i_ino); //HOON
-        //qsh_destdir->d_inode->i_rwsem = c->destdir->d_inode->i_rwsem;
         qsh_udir = d_inode(qsh_destdir);
 	    inode_lock_nested(qsh_udir, I_MUTEX_PARENT);
         qsh_upper = lookup_one_len(c->destname.name, qsh_destdir, c->destname.len);
         vfs_mkdir(qsh_udir,qsh_upper,qsh_udir->i_mode);
+	    d = lookup_one_len(qsh_upper->d_name.name, qsh_upper->d_parent, qsh_upper->d_name.len);
         printk("Q_sh : %s, mkdir success\n",__func__); //HOON
-        QSH_I(d_inode(c->dentry))->qsh_dentry = qsh_upper;
-        printk("Q_sh : %s, QSH_I success dentry : %lu_%s, qsh_upper : %lu_%s\n",__func__,c->dentry->d_inode->i_ino,c->dentry->d_name.name, qsh_upper->d_inode->i_ino, qsh_upper->d_name.name); //HOON
+        OVL_I(d_inode(c->dentry))->qsh_dentry = d;
+        printk("Q_sh : %s, OVL_I success dentry : %lu_%s, qsh_upper : %lu_%s\n",__func__,c->dentry->d_inode->i_ino,c->dentry->d_name.name, d->d_inode->i_ino, d->d_name.name); //HOON
+        //dput(qsh_destdir);
         dput(qsh_upper);
+        //dput(d);
+        
+        if(OVL_I(d_inode(c->dentry))){
+            check_d = qsh_dentry_dereference(OVL_I(d_inode(c->dentry)));
+            //dput(check_d);
+            printk("Q_sh : %s, check if %lu_%s\n",__func__,check_d->d_inode->i_ino,check_d->d_name.name); //HOON
+        }
+        else
+            printk("Q_sh : %s, check else\n",__func__); //HOON
+
 	    inode_unlock(qsh_udir);
         //HOON
     }

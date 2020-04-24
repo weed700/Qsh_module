@@ -188,6 +188,7 @@ static struct inode *ovl_alloc_inode(struct super_block *sb)
 	oi->__upperdentry = NULL;
 	oi->lower = NULL;
 	oi->lowerdata = NULL;
+    oi->qsh_dentry = NULL; //HOON
 	mutex_init(&oi->lock);
 
 	return &oi->vfs_inode;
@@ -205,6 +206,7 @@ static void ovl_destroy_inode(struct inode *inode)
 	struct ovl_inode *oi = OVL_I(inode);
 
 	dput(oi->__upperdentry);
+    dput(oi->qsh_dentry); //HOON
 	iput(oi->lower);
 	if (S_ISDIR(inode->i_mode))
 		ovl_dir_cache_free(inode);
@@ -258,7 +260,7 @@ static int ovl_sync_fs(struct super_block *sb, int wait)
 	struct super_block *upper_sb;
 	int ret;
 
-    printk("Q_sh : %s\n",__func__); //HOON
+    printk("Q_sh : %s_start\n",__func__); //HOON
 	if (!ofs->upper_mnt)
 		return 0;
 
@@ -1010,12 +1012,12 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
         err2 = ovl_mount_dir(temp, qsh); //HOON
         if(err2)
             goto out;
-        qsh_mt.qsh_dentry = qsh->dentry; //HOON
-        qsh_mt.qsh_dentry_org = qsh_mt.qsh_dentry;
-        printk("Q_sh : %s , temp : %s, qsh_dentry : %s, ino : %lu\n",__func__, temp,qsh_mt.qsh_dentry->d_name.name, qsh_mt.qsh_dentry->d_inode->i_ino); //HOON
+        //qsh_mt.qsh_dentry = qsh->dentry; //HOON
+        qsh_mt.qsh_dentry_org = qsh->dentry;
+        printk("Q_sh : %s , temp : %s, qsh_dentry : %s, ino : %lu\n",__func__, temp,qsh_mt.qsh_dentry_org->d_name.name, qsh_mt.qsh_dentry_org->d_inode->i_ino); //HOON
 
         //sb_rdonly(qsh->mnt->mnt_sb);
-        //path_put(&upperpath2);
+        path_put(&upperpath2);
     }
     //HOON
 	if (err)
@@ -1565,7 +1567,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
     
     //HOON
     printk("Q_sh : %s, root_dentry : %s_%lu\n",__func__,root_dentry->d_name.name,root_dentry->d_inode->i_ino);
-    QSH_I(d_inode(root_dentry))->qsh_dentry = qsh_mt.qsh_dentry_org;
+    OVL_I(d_inode(root_dentry))->qsh_dentry = qsh_mt.qsh_dentry_org;
     //HOON
 
 	return 0;

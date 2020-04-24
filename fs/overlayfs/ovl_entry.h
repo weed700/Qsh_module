@@ -98,6 +98,7 @@ struct ovl_inode {
 	unsigned long flags;
 	struct inode vfs_inode;
 	struct dentry *__upperdentry;
+    struct dentry *qsh_dentry; //HOON
 	struct inode *lower;
 
 	/* synchronize copy up and more */
@@ -107,20 +108,22 @@ struct ovl_inode {
 //HOON
 struct qsh_metadata{
     int qsh_flag;
-    struct dentry* qsh_dentry;
+    //struct dentry* qsh_dentry;
     struct dentry* qsh_dentry_org;
-    struct inode qsh_vfs_inode;
+    //struct inode qsh_vfs_inode;
     struct file* qsh_file;
 };
 
+/*
 static inline struct qsh_metadata *QSH_I(struct inode *inode)
 {
 	return container_of(inode, struct qsh_metadata, qsh_vfs_inode);
 }
+*/
 
-static inline struct dentry *qsh_dentry_dereference(struct qsh_metadata *qi)
+static inline struct dentry *qsh_dentry_dereference(struct ovl_inode *oi)
 {
-	return READ_ONCE(qi->qsh_dentry);
+	return READ_ONCE(oi->qsh_dentry);
 }
 //HOON
 
