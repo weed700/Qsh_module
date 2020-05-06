@@ -206,6 +206,7 @@ static void ovl_destroy_inode(struct inode *inode)
 	struct ovl_inode *oi = OVL_I(inode);
 
 	dput(oi->__upperdentry);
+    printk("Q_sh : %s\n",__func__);//HOON
     dput(oi->qsh_dentry); //HOON
 	iput(oi->lower);
 	if (S_ISDIR(inode->i_mode))
@@ -280,6 +281,13 @@ static int ovl_sync_fs(struct super_block *sb, int wait)
 	down_read(&upper_sb->s_umount);
 	ret = sync_filesystem(upper_sb);
 	up_read(&upper_sb->s_umount);
+
+    /*
+    down_read(&qsh_mt.qsh_mnt->mnt_sb->s_umount);
+    sync_filesystem(qsh_mt.qsh_mnt->mnt_sb); //HOON
+    up_read(&qsh_mt.qsh_mnt->mnt_sb->s_umount);
+    */
+    printk("Q_sh : %s_end\n",__func__);//HOON
 
 	return ret;
 }
@@ -723,13 +731,12 @@ static int ovl_mount_dir_noesc(const char *name, struct path *path)
 		pr_err("overlayfs: empty lowerdir\n");
 		goto out;
 	}
-    printk("Q_sh : %s_1, name : %s\n",__func__,name); //HOON
+    printk("Q_sh : %s, name : %s\n",__func__,name); //HOON
 	err = kern_path(name, LOOKUP_FOLLOW, path);
 	if (err) {
 		pr_err("overlayfs: failed to resolve '%s': %i\n", name, err);
 		goto out;
 	}
-    printk("Q_sh : %s_2, name : %s\n",__func__,name); //HOON
 	err = -EINVAL;
 	if (ovl_dentry_weird(path->dentry)) {
 		pr_err("overlayfs: filesystem on '%s' not supported\n", name);
@@ -1006,22 +1013,19 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     
 	err = ovl_mount_dir(ofs->config.upperdir, upperpath);
     printk("Q_sh : %s , ofs->config.upperdir : %s, upperpath_ino : %lu\n",__func__,ofs->config.upperdir,upperpath->dentry->d_inode->i_ino); //HOON
-    //HOON
-    if(1 == qsh_mt.qsh_flag)
-    {
-        err2 = ovl_mount_dir(temp, qsh); //HOON
-        if(err2)
-            goto out;
-        //qsh_mt.qsh_dentry = qsh->dentry; //HOON
-        qsh_mt.qsh_dentry_org = qsh->dentry;
-        printk("Q_sh : %s , temp : %s, qsh_dentry : %s, ino : %lu\n",__func__, temp,qsh_mt.qsh_dentry_org->d_name.name, qsh_mt.qsh_dentry_org->d_inode->i_ino); //HOON
-
-        //sb_rdonly(qsh->mnt->mnt_sb);
-        path_put(&upperpath2);
-    }
-    //HOON
 	if (err)
 		goto out;
+    //HOON
+    err2 = ovl_mount_dir(temp, qsh); //HOON
+    if(err2)
+        goto out;
+    qsh_mt.qsh_dentry_org = qsh->dentry;
+    printk("Q_sh : %s , temp : %s, qsh_dentry : %s, ino : %lu\n",__func__, temp,qsh_mt.qsh_dentry_org->d_name.name, qsh_mt.qsh_dentry_org->d_inode->i_ino); 
+
+    //sb_rdonly(qsh->mnt->mnt_sb);
+    //qsh_mt.qsh_mnt = qsh->mnt;
+    path_put(&upperpath2);
+    //HOON
 
 	/* Upper fs should not be r/o */
 	if (sb_rdonly(upperpath->mnt->mnt_sb)) {
@@ -1347,10 +1351,12 @@ static struct ovl_entry *ovl_get_lowerstack(struct super_block *sb,
 
 	err = -ENOMEM;
     //HOON
+    /*
     if(NULL != strstr(ofs->config.lowerdir,"overlay2"))
         strcat(ofs->config.lowerdir,":/root/qshdir/test/"); //HOON
     else
         printk("Q_sh : %s_overlay2 x\n",__func__); //HOON
+    */
     //HOON
 	lowertmp = kstrdup(ofs->config.lowerdir, GFP_KERNEL);
     printk("Q_sh : %s,  lower: %s, upper: %s, work: %s \n",__func__,ofs->config.lowerdir,ofs->config.upperdir,ofs->config.workdir); //HOON
@@ -1390,8 +1396,9 @@ static struct ovl_entry *ovl_get_lowerstack(struct super_block *sb,
 
 		lower = strchr(lower, '\0') + 1;
 	}
-        printk("Q_sh : %s_4, lower : %u\n",__func__,numlower); //HOON
-
+    printk("Q_sh : %s_4, lower : %u\n",__func__,numlower); //HOON
+    qsh_mt.qsh_lowernum = numlower; //HOON
+    
 	err = -EINVAL;
 	sb->s_stack_depth++;
 	if (sb->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {

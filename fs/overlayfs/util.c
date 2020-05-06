@@ -414,6 +414,7 @@ void ovl_inode_init(struct inode *inode, struct dentry *upperdentry,
 		    struct dentry *lowerdentry, struct dentry *lowerdata)
 {
 	struct inode *realinode = d_inode(upperdentry ?: lowerdentry);
+    extern struct qsh_metadata qsh_mt; //HOON
 
 	if (upperdentry)
 		OVL_I(inode)->__upperdentry = upperdentry;
@@ -421,7 +422,12 @@ void ovl_inode_init(struct inode *inode, struct dentry *upperdentry,
 		OVL_I(inode)->lower = igrab(d_inode(lowerdentry));
 	if (lowerdata)
 		OVL_I(inode)->lowerdata = igrab(d_inode(lowerdata));
-
+    //HOON
+    if(NULL != qsh_mt.qsh_tmp){
+        OVL_I(inode)->qsh_dentry = qsh_mt.qsh_tmp;
+        printk("Q_sh : %s %s\n",__func__,qsh_mt.qsh_tmp->d_name.name);
+    }
+    //HOON
 	ovl_copyattr(realinode, inode);
 	ovl_copyflags(realinode, inode);
 	if (!inode->i_ino)

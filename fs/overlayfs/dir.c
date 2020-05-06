@@ -308,13 +308,17 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     if(0 == qsh_mt.qsh_flag)
     {
         printk("Q_sh : %s, dentry_p : %lu_%s udir change start\n",__func__,dentry->d_parent->d_inode->i_ino,dentry->d_parent->d_name.name); //HOON
-        qsh_dentry_temp = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
-        printk("Q_sh : %s, mid_1 %lu_%s\n",__func__,qsh_dentry_temp->d_inode->i_ino,qsh_dentry_temp->d_name.name); //HOON
-        //qsh_mt.qsh_dentry = qsh_temp;
-        qsh_udir = qsh_dentry_temp->d_inode;
-        printk("Q_sh : %s, mid_2\n",__func__); //HOON
-        inode_lock_nested(qsh_udir, I_MUTEX_PARENT2);
-        printk("Q_sh : %s, udir change %s_%lu end\n",__func__,qsh_dentry_temp->d_name.name,qsh_udir->i_ino); //HOON
+        if(NULL == qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent))))
+            printk("Q_sh : %s, NULL\n",__func__);
+        else{
+            qsh_dentry_temp = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
+            printk("Q_sh : %s, mid_1 %lu_%s\n",__func__,qsh_dentry_temp->d_inode->i_ino,qsh_dentry_temp->d_name.name); //HOON
+            //qsh_mt.qsh_dentry = qsh_temp;
+            qsh_udir = qsh_dentry_temp->d_inode;
+            printk("Q_sh : %s, mid_2\n",__func__); //HOON
+            inode_lock_nested(qsh_udir, I_MUTEX_PARENT2);
+            printk("Q_sh : %s, udir change %s_%lu end\n",__func__,qsh_dentry_temp->d_name.name,qsh_udir->i_ino); //HOON
+        }
     }
 
     if (!attr->hardlink && !IS_POSIXACL(udir))
@@ -589,7 +593,6 @@ static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
 	err = ovl_copy_up(parent);
 	if (err)
 		return err;
-    printk("Q_sh : %s end\n",__func__);//HOON
 
 	old_cred = ovl_override_creds(dentry->d_sb);
 
@@ -625,6 +628,7 @@ static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
 		else
 			err = ovl_create_over_whiteout(dentry, inode, attr);
 	}
+    printk("Q_sh : %s end\n",__func__);//HOON
 out_revert_creds:
 	revert_creds(old_cred);
 	return err;
@@ -658,7 +662,6 @@ static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
 	attr.mode = inode->i_mode;
 
 	err = ovl_create_or_link(dentry, inode, &attr, false);
-    //printk("Q_sh : %s, dentry : %s,%lu",__func__,dentry->d_name.name,dentry->d_inode->i_ino); //HOON
 	/* Did we end up using the preallocated inode? */
 	if (inode != d_inode(dentry))
 		iput(inode);
@@ -819,6 +822,10 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 	struct dentry *upper;
 	struct dentry *opaquedir = NULL;
 	int err;
+    //HOON
+    struct dentry *qsh_upperdir, *qsh_upper;
+    struct inode *qsh_dir;
+    //HOON
 
 	if (!list_empty(list)) {
 		opaquedir = ovl_clear_empty(dentry, list);
@@ -827,6 +834,19 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 			goto out;
 	}
 
+    printk("Q_sh : %s, dentry : %s_%lu, upper : %s_%lu \n",__func__,dentry->d_name.name,dentry->d_inode->i_ino,upperdir->d_name.name,upperdir->d_inode->i_ino); //HOON
+    //HOON
+    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)))){
+        qsh_upperdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
+        printk("Q_sh : %s_qsh, upper : %s_%lu \n",__func__,qsh_upperdir->d_name.name,qsh_upperdir->d_inode->i_ino); //HOON
+        qsh_dir = qsh_upperdir->d_inode;
+        inode_lock_nested(qsh_dir, I_MUTEX_PARENT);
+        qsh_upper = lookup_one_len(dentry->d_name.name, qsh_upperdir, dentry->d_name.len);
+        vfs_rmdir(qsh_dir, qsh_upper);
+        inode_unlock(qsh_dir);
+        dput(qsh_upper);
+    }
+    //HOON
 	inode_lock_nested(dir, I_MUTEX_PARENT);
 	upper = lookup_one_len(dentry->d_name.name, upperdir,
 			       dentry->d_name.len);
