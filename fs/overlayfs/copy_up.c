@@ -130,7 +130,7 @@ static int ovl_copy_up_data(struct path *old, struct path *new, loff_t len)
 	if (len == 0)
 		return 0;
 
-    printk("Q_sh : %s, old_name,ino : %s,%lu new_name,ino : %s,%lu\n",__func__,old->dentry->d_name.name,old->dentry->d_inode->i_ino, new->dentry->d_name.name, new->dentry->d_inode->i_ino); //HOON
+    //printk("Q_sh : %s, old_name,ino : %s,%lu new_name,ino : %s,%lu\n",__func__,old->dentry->d_name.name,old->dentry->d_inode->i_ino, new->dentry->d_name.name, new->dentry->d_inode->i_ino); //HOON
 	old_file = ovl_path_open(old, O_LARGEFILE | O_RDONLY);
 	if (IS_ERR(old_file))
 		return PTR_ERR(old_file);

@@ -206,7 +206,7 @@ out:
 
 struct dentry *ovl_create_temp(struct dentry *workdir, struct ovl_cattr *attr)
 {
-    printk("Q_sh : %s, workdir : %s, workdir_ino : %lu\n",__func__,workdir->d_name.name,workdir->d_inode->i_ino); //HOON
+    //printk("Q_sh : %s, workdir : %s, workdir_ino : %lu\n",__func__,workdir->d_name.name,workdir->d_inode->i_ino); //HOON
 	return ovl_create_real(d_inode(workdir), ovl_lookup_temp(workdir),
 			       attr);
 }
@@ -304,16 +304,15 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     extern struct qsh_metadata qsh_mt; //HOON
     struct inode *qsh_udir; //HOON
     struct dentry *qsh_dentry_temp;
+    char* qsh_name;
     //HOON
-    if(0 == qsh_mt.qsh_flag)
-    {
+    if((0 == qsh_mt.qsh_flag) || (attr->mode & S_IFMT) == S_IFDIR){
         printk("Q_sh : %s, dentry_p : %lu_%s udir change start\n",__func__,dentry->d_parent->d_inode->i_ino,dentry->d_parent->d_name.name); //HOON
         if(NULL == qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent))))
             printk("Q_sh : %s, NULL\n",__func__);
         else{
             qsh_dentry_temp = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
             printk("Q_sh : %s, mid_1 %lu_%s\n",__func__,qsh_dentry_temp->d_inode->i_ino,qsh_dentry_temp->d_name.name); //HOON
-            //qsh_mt.qsh_dentry = qsh_temp;
             qsh_udir = qsh_dentry_temp->d_inode;
             printk("Q_sh : %s, mid_2\n",__func__); //HOON
             inode_lock_nested(qsh_udir, I_MUTEX_PARENT2);
@@ -326,8 +325,28 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
 
     inode_lock_nested(udir, I_MUTEX_PARENT);
 
-
     //HOON
+    if((0 == qsh_mt.qsh_flag) || (attr->mode & S_IFMT) == S_IFDIR) {
+        printk("Q_sh : %s, ovl_create_real start\n",__func__); //HOON
+	    qsh_name = (char*)kcalloc(dentry->d_name.len+1, sizeof(char), GFP_KERNEL);
+        if((attr->mode & S_IFMT) == S_IFDIR)
+        {
+            strcpy(qsh_name,".");
+            strcat(qsh_name, dentry->d_name.name);
+            printk("Q_sh : %s, name change : %s\n",__func__,qsh_name);
+        }
+        else
+            strcpy(qsh_name,dentry->d_name.name);
+
+        newdentry = ovl_create_real(qsh_udir,
+                lookup_one_len(qsh_name,
+                        qsh_dentry_temp,
+                        strlen(qsh_name)),
+                    attr);    
+        printk("Q_sh : %s, qsh_flag : %d, newdentry_ino : %lu, newp_ino : %lu, newp_name : %s\n",__func__,qsh_mt.qsh_flag,newdentry->d_inode->i_ino, newdentry->d_parent->d_inode->i_ino,newdentry->d_parent->d_name.name);
+        inode_unlock(qsh_udir);
+        kfree(qsh_name);
+    }
     if(1 == qsh_mt.qsh_flag){
         printk("Q_sh : %s, qsh_flag : %d, upperdir_ino : %lu, dentry+name : %s\n",__func__,qsh_mt.qsh_flag,upperdir->d_inode->i_ino,dentry->d_name.name);
         newdentry = ovl_create_real(udir,
@@ -336,17 +355,6 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
                     dentry->d_name.len),
                 attr);
     }
-    else
-    {
-        printk("Q_sh : %s, ovl_create_real start\n",__func__); //HOON
-        newdentry = ovl_create_real(qsh_udir,
-                lookup_one_len(dentry->d_name.name,
-                        qsh_dentry_temp,
-                        dentry->d_name.len),
-                    attr);    
-        printk("Q_sh : %s, qsh_flag : %d, newdentry_ino : %lu, newp_ino : %lu, newp_name : %s\n",__func__,qsh_mt.qsh_flag,newdentry->d_inode->i_ino, newdentry->d_parent->d_inode->i_ino,newdentry->d_parent->d_name.name);
-	    inode_unlock(qsh_udir);
-    } 
     //HOON
 
     err = PTR_ERR(newdentry);
@@ -823,8 +831,8 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 	struct dentry *opaquedir = NULL;
 	int err;
     //HOON
-    struct dentry *qsh_upperdir, *qsh_upper;
-    struct inode *qsh_dir;
+    //struct dentry *qsh_upperdir, *qsh_upper;
+    //struct inode *qsh_dir;
     //HOON
 
 	if (!list_empty(list)) {
@@ -836,16 +844,25 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 
     printk("Q_sh : %s, dentry : %s_%lu, upper : %s_%lu \n",__func__,dentry->d_name.name,dentry->d_inode->i_ino,upperdir->d_name.name,upperdir->d_inode->i_ino); //HOON
     //HOON
+    /*
     if(NULL != qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)))){
         qsh_upperdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
         printk("Q_sh : %s_qsh, upper : %s_%lu \n",__func__,qsh_upperdir->d_name.name,qsh_upperdir->d_inode->i_ino); //HOON
         qsh_dir = qsh_upperdir->d_inode;
-        inode_lock_nested(qsh_dir, I_MUTEX_PARENT);
+        inode_lock_nested(qsh_dir, I_MUTEX_PARENT2);
         qsh_upper = lookup_one_len(dentry->d_name.name, qsh_upperdir, dentry->d_name.len);
-        vfs_rmdir(qsh_dir, qsh_upper);
+        if(qsh_upper){
+            if(is_dir)
+                vfs_rmdir(qsh_dir, qsh_upper);
+            else
+                vfs_unlink(qsh_dir, qsh_upper, NULL);
+
+            OVL_I(d_inode(dentry))->qsh_dentry = NULL;
+            dput(qsh_upper);
+        }
         inode_unlock(qsh_dir);
-        dput(qsh_upper);
     }
+    */
     //HOON
 	inode_lock_nested(dir, I_MUTEX_PARENT);
 	upper = lookup_one_len(dentry->d_name.name, upperdir,

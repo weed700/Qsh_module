@@ -311,6 +311,7 @@ static inline int ovl_dir_read(struct path *realpath,
 		rdd->count = 0;
 		rdd->err = 0;
 		err = iterate_dir(realfile, &rdd->ctx);
+        printk("Q_sh : %s_%d, dentry : %s_%lu\n",__func__,rdd->count,realfile->f_path.dentry->d_name.name, realfile->f_path.dentry->d_inode->i_ino); //HOON
 		if (err >= 0)
 			err = rdd->err;
 	} while (!err && rdd->count);
@@ -391,6 +392,7 @@ static int ovl_dir_read_merged(struct dentry *dentry, struct list_head *list,
 			list_del(&rdd.middle);
 		}
 	}
+    
 	return err;
 }
 
@@ -505,9 +507,11 @@ get:
 	if (OVL_TYPE_ORIGIN(type)) {
 		struct kstat stat;
 		struct path statpath = *path;
-
+        
 		statpath.dentry = this;
+        //printk("Q_sh : %s getattr in :%s_%lu\n",__func__,statpath.dentry->d_name.name, statpath.dentry->d_inode->i_ino); //HOON
 		err = vfs_getattr(&statpath, &stat, STATX_INO, 0);
+       // printk("Q_sh : %s getattr end\n",__func__); //HOON
 		if (err)
 			goto fail;
 
@@ -699,7 +703,7 @@ static int ovl_iterate_real(struct file *file, struct dir_context *ctx)
 		.xinobits = ovl_xino_bits(dir->d_sb),
 	};
 
-    printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dir->d_name.name, dir->d_inode->i_ino); //HOON
+    //printk("Q_sh : %s dentry : %s, inode : %lu\n",__func__,dir->d_name.name, dir->d_inode->i_ino); //HOON
 	if (rdt.xinobits && lower_layer)
 		rdt.fsid = lower_layer->fsid;
 
@@ -735,6 +739,10 @@ static int ovl_iterate(struct file *file, struct dir_context *ctx)
 	struct dentry *dentry = file->f_path.dentry;
 	struct ovl_cache_entry *p;
 	int err;
+    //HOON
+    //struct file* qsh_realfile;
+    //struct path qshpath;
+    //HOON
 
     printk("Q_sh : %s, dentry : %s, ino : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
 
@@ -766,8 +774,15 @@ static int ovl_iterate(struct file *file, struct dir_context *ctx)
 		if (IS_ERR(cache))
 			return PTR_ERR(cache);
 
-		od->cache = cache;
-		ovl_seek_cursor(od, ctx->pos);
+        od->cache = cache;
+        ovl_seek_cursor(od, ctx->pos);
+        
+        if(od->qsh_realfile)
+        {
+            printk("Q_sh : %s qsh_flag in\n",__func__); //HOON
+            iterate_dir(od->qsh_realfile,ctx);
+            printk("Q_sh : %s qsh_flag end\n",__func__); //HOON
+        }
 	}
 
 	while (od->cursor != &od->cache->entries) {
@@ -784,13 +799,25 @@ static int ovl_iterate(struct file *file, struct dir_context *ctx)
         od->cursor = p->l_node.next;
         ctx->pos++;
     }
+    printk("Q_sh : %s_end\n",__func__); //HOON
     //HOON
+    /*
     if(NULL != od->qsh_realfile)
     {
         printk("Q_sh : %s qsh_flag in\n",__func__); //HOON
         iterate_dir(od->qsh_realfile,ctx);
         printk("Q_sh : %s qsh_flag end\n",__func__); //HOON
+    }*/
+    /*
+    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(dentry)))){
+        printk("Q_sh : %s_if\n",__func__); //HOON
+        qshpath.dentry = qsh_dentry_dereference(OVL_I(d_inode(dentry)));
+        qsh_realfile = ovl_path_open(&qshpath,O_RDONLY | O_DIRECTORY);
+        iterate_dir(qsh_realfile,ctx);
+        printk("Q_sh : %s_if end\n",__func__); //HOON
+        //fput(qsh_realfile);
     }
+    */
     //HOON
     return 0;
 }
@@ -884,11 +911,19 @@ static int ovl_dir_release(struct inode *inode, struct file *file)
 {
 	struct ovl_dir_file *od = file->private_data;
 
+    printk("Q_sh : %s \n",__func__); //HOON
 	if (od->cache) {
 		inode_lock(inode);
 		ovl_cache_put(od, file->f_path.dentry);
 		inode_unlock(inode);
 	}
+    //HOON
+    printk("Q_sh : %s qsh_realfile in\n",__func__); //HOON
+    //od->qsh_realfile->f_count = od->realfile->f_count;
+    //fput(od->qsh_realfile); //HOON
+    od->qsh_realfile = NULL;
+    printk("Q_sh : %s qsh_realfile out\n",__func__); //HOON
+    //HOON
 	fput(od->realfile);
 	if (od->upperfile)
 		fput(od->upperfile);
@@ -915,15 +950,17 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
     printk("Q_sh : %s_2, dentry : %s, ino : %lu, flags : %d\n",__func__,realpath.dentry->d_name.name, realpath.dentry->d_inode->i_ino,file->f_flags); //HOON
     //HOON
     //if(NULL != OVL_I(d_inode(file->f_path.dentry))->qsh_dentry && 0 != strcmp("/",file->f_path.dentry->d_name.name)){
-    if(NULL != OVL_I(d_inode(file->f_path.dentry))->qsh_dentry){
+    
+    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))){
         printk("Q_sh : %s_if\n",__func__); //HOON
         qshpath.dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
         od->qsh_realfile = ovl_path_open(&qshpath,file->f_flags);
-        printk("Q_sh : %s_qsh, dentry : %s, ino : %lu\n",__func__,od->qsh_realfile->f_path.dentry->d_name.name, od->qsh_realfile->f_path.dentry->d_inode->i_ino); //HOON
+        printk("Q_sh : %s_qsh, dentry : %s, ino : %lu\n",__func__,od->qsh_realfile->f_path.dentry->d_name.name, od->qsh_realfile->f_path.dentry->d_inode->i_ino); //HOON 
     }else{
         printk("Q_sh : %s, else \n",__func__);
         od->qsh_realfile = NULL;
     }
+    
     //HOON
     
     printk("Q_sh : %s_3, dentry : %s, ino : %lu\n",__func__,realfile->f_path.dentry->d_name.name, realfile->f_path.dentry->d_inode->i_ino); //HOON

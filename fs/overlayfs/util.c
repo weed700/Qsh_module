@@ -470,16 +470,15 @@ static void ovl_dentry_version_inc(struct dentry *dentry, bool impurity)
 
 void ovl_dir_modified(struct dentry *dentry, bool impurity)
 {
-    extern struct qsh_metadata qsh_mt; //HOON
+    //extern struct qsh_metadata qsh_mt; //HOON
     struct dentry *qsh_temp; //HOON 
+    /* Copy mtime/ctime */
+	 ovl_copyattr(d_inode(ovl_dentry_upper(dentry)), d_inode(dentry));
+    
     //HOON
-    if(1 == qsh_mt.qsh_flag){
-        /* Copy mtime/ctime */
-	    ovl_copyattr(d_inode(ovl_dentry_upper(dentry)), d_inode(dentry));
-    }
-    else{
+    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(dentry))) && (0 == strcmp("/",dentry->d_name.name))){
         qsh_temp = qsh_dentry_dereference(OVL_I(d_inode(dentry)));
-        printk("Q_sh : %s, qsh_flag : %d, qsh_ino : %lu, dentry_ino : %lu\n",__func__, qsh_mt.qsh_flag, qsh_temp->d_inode->i_ino, dentry->d_inode->i_ino);
+        printk("Q_sh : %s, qsh_ino : %lu, dentry_ino : %lu\n",__func__, qsh_temp->d_inode->i_ino, dentry->d_inode->i_ino);
         ovl_copyattr(qsh_temp->d_inode, d_inode(dentry));
     }
     //HOON

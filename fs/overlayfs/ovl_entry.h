@@ -110,7 +110,7 @@ struct qsh_metadata{
     int qsh_flag;
     struct dentry* qsh_tmp;
     struct dentry* qsh_dentry_org;
-    unsigned int qsh_lowernum;
+    //unsigned int qsh_lowernum;
 	//struct vfsmount *qsh_mnt;
     //struct inode qsh_vfs_inode;
     //struct file* qsh_file;

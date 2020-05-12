@@ -23,6 +23,7 @@ int ovl_setattr(struct dentry *dentry, struct iattr *attr)
 	struct dentry *upperdentry;
 	const struct cred *old_cred;
 
+    //printk("Q_sh : %s , %s_%lu\n",__func__,dentry->d_name.name,dentry->d_inode->i_ino); //HOON
 	err = setattr_prepare(dentry, attr);
 	if (err)
 		return err;
@@ -160,8 +161,9 @@ int ovl_getattr(const struct path *path, struct kstat *stat,
 
 	type = ovl_path_real(dentry, &realpath);
 	old_cred = ovl_override_creds(dentry->d_sb);
-    //printk("Q_sh : %s_2 dentry : %s, inode : %lu\n",__func__,realpath.dentry->d_name.name, realpath.dentry->d_inode->i_ino); //HOON
+    //printk("Q_sh : %s_2 start dentry : %s, inode : %lu\n",__func__,realpath.dentry->d_name.name, realpath.dentry->d_inode->i_ino); //HOON
 	err = vfs_getattr(&realpath, stat, request_mask, flags);
+    printk("Q_sh : %s_3 end \n",__func__); //HOON
 	if (err)
 		goto out;
 
@@ -887,10 +889,6 @@ struct inode *ovl_get_inode(struct super_block *sb,
 		}
 	}
 	ovl_fill_inode(inode, realinode->i_mode, realinode->i_rdev, ino, fsid);
-    if(upperdentry)
-        printk("Q_sh : %s\n",__func__); //HOON
-    //if(oip->lowerpath[0].dentry)
-    //    printk("Q_sh : %s, lower\n",__func__);//HOON
 	ovl_inode_init(inode, upperdentry, lowerdentry, oip->lowerdata);
 
 	if (upperdentry && ovl_is_impuredir(upperdentry))

@@ -307,7 +307,9 @@ static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
 	struct path path;
 	int err;
 
+    printk("Q_sh : %s start\n",__func__); //HOON
 	ovl_path_real(root_dentry, &path);
+    printk("Q_sh : %s end\n",__func__); //HOON
 
 	err = vfs_statfs(&path, buf);
 	if (!err) {
@@ -1397,7 +1399,7 @@ static struct ovl_entry *ovl_get_lowerstack(struct super_block *sb,
 		lower = strchr(lower, '\0') + 1;
 	}
     printk("Q_sh : %s_4, lower : %u\n",__func__,numlower); //HOON
-    qsh_mt.qsh_lowernum = numlower; //HOON
+    //qsh_mt.qsh_lowernum = numlower; //HOON
     
 	err = -EINVAL;
 	sb->s_stack_depth++;
@@ -1448,6 +1450,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	int err;
     
     qsh_mt.qsh_flag = 1; //HOON
+    qsh_mt.qsh_tmp = NULL; //HOON
     printk("Q_sh : %s : mount,qsh_mt.qsh_flag = %d\n",__func__,qsh_mt.qsh_flag); //HOON
 	err = -ENOMEM;
 	ofs = kzalloc(sizeof(struct ovl_fs), GFP_KERNEL);
