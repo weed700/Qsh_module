@@ -478,6 +478,7 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
         OVL_I(d_inode(c->dentry))->qsh_dentry = d;
         printk("Q_sh : %s, OVL_I success dentry : %lu_%s, qsh_upper : %lu_%s\n",__func__,c->dentry->d_inode->i_ino,c->dentry->d_name.name, d->d_inode->i_ino, d->d_name.name); //HOON
         dput(qsh_upper);
+        dput(d);
         inode_unlock(qsh_udir);
         //HOON
     }
@@ -841,6 +842,54 @@ static int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 	return err;
 }
 
+//HOON
+void qsh_copy_up(struct dentry *dentry)
+{
+    int err = 0;
+	bool disconnected = (dentry->d_flags & DCACHE_DISCONNECTED);
+    struct dentry *qsh_destdir;
+    struct dentry *qsh_upper;
+    struct inode *qsh_udir;
+    struct dentry *d;
+    
+    printk("Q_sh : %s start\n",__func__);
+    while(!err){
+        struct dentry *next;
+        struct dentry *parent = NULL;
+
+        if(qsh_dentry_dereference(OVL_I(d_inode(dentry))))
+            break;
+
+        next = dget(dentry);
+        for(; !disconnected;){
+            parent = dget_parent(next);
+
+            if(qsh_dentry_dereference(OVL_I(d_inode(parent))))
+                break;
+            dput(next);
+            next = parent;
+        }
+        /*mkdir*/
+        qsh_destdir = qsh_dentry_dereference(OVL_I(d_inode(parent)));
+        qsh_udir = d_inode(qsh_destdir);
+        inode_lock_nested(qsh_udir, I_MUTEX_PARENT);
+        qsh_upper = lookup_one_len(next->d_name.name, qsh_destdir, next->d_name.len);
+        vfs_mkdir(qsh_udir,qsh_upper,qsh_udir->i_mode);
+        d = lookup_one_len(qsh_upper->d_name.name, qsh_upper->d_parent, qsh_upper->d_name.len);
+        OVL_I(d_inode(next))->qsh_dentry = d;
+        dput(qsh_upper);
+        dput(d);
+        inode_unlock(qsh_udir);
+
+        if(next->d_inode->i_ino == dentry->d_inode->i_ino)
+            err = 1;
+
+        dput(parent);
+        dput(next);
+    }
+    printk("Q_sh : %s end\n",__func__);
+}
+//HOON
 int ovl_copy_up_flags(struct dentry *dentry, int flags)
 {
 	int err = 0;

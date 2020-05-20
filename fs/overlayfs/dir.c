@@ -304,9 +304,8 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     extern struct qsh_metadata qsh_mt; //HOON
     struct inode *qsh_udir; //HOON
     struct dentry *qsh_dentry_temp;
-    char* qsh_name;
     //HOON
-    if((0 == qsh_mt.qsh_flag) || (attr->mode & S_IFMT) == S_IFDIR){
+    if(0 == qsh_mt.qsh_flag){
         printk("Q_sh : %s, dentry_p : %lu_%s udir change start\n",__func__,dentry->d_parent->d_inode->i_ino,dentry->d_parent->d_name.name); //HOON
         if(NULL == qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent))))
             printk("Q_sh : %s, NULL\n",__func__);
@@ -326,28 +325,15 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     inode_lock_nested(udir, I_MUTEX_PARENT);
 
     //HOON
-    if((0 == qsh_mt.qsh_flag) || (attr->mode & S_IFMT) == S_IFDIR) {
-        printk("Q_sh : %s, ovl_create_real start\n",__func__); //HOON
-	    qsh_name = (char*)kcalloc(dentry->d_name.len+1, sizeof(char), GFP_KERNEL);
-        if((attr->mode & S_IFMT) == S_IFDIR)
-        {
-            strcpy(qsh_name,".");
-            strcat(qsh_name, dentry->d_name.name);
-            printk("Q_sh : %s, name change : %s\n",__func__,qsh_name);
-        }
-        else
-            strcpy(qsh_name,dentry->d_name.name);
-
+    if(0 == qsh_mt.qsh_flag) {
         newdentry = ovl_create_real(qsh_udir,
-                lookup_one_len(qsh_name,
+                lookup_one_len(dentry->d_name.name,
                         qsh_dentry_temp,
-                        strlen(qsh_name)),
+                        dentry->d_name.len),
                     attr);    
-        printk("Q_sh : %s, qsh_flag : %d, newdentry_ino : %lu, newp_ino : %lu, newp_name : %s\n",__func__,qsh_mt.qsh_flag,newdentry->d_inode->i_ino, newdentry->d_parent->d_inode->i_ino,newdentry->d_parent->d_name.name);
+        printk("Q_sh : %s, qsh_flag : %d, newdentry_ino : %lu, newp_ino : %lu, newp_name : %s\n",__func__,qsh_mt.qsh_flag,newdentry->d_inode->i_ino, newdentry->d_inode->i_ino,newdentry->d_name.name);
         inode_unlock(qsh_udir);
-        kfree(qsh_name);
-    }
-    if(1 == qsh_mt.qsh_flag){
+    }else{
         printk("Q_sh : %s, qsh_flag : %d, upperdir_ino : %lu, dentry+name : %s\n",__func__,qsh_mt.qsh_flag,upperdir->d_inode->i_ino,dentry->d_name.name);
         newdentry = ovl_create_real(udir,
                 lookup_one_len(dentry->d_name.name,
@@ -589,6 +575,7 @@ out_cleanup:
 	goto out_dput;
 }
 
+
 static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
 			      struct ovl_cattr *attr, bool origin)
 {
@@ -599,6 +586,8 @@ static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
 
     printk("Q_sh : %s start\n",__func__);//HOON
 	err = ovl_copy_up(parent);
+
+    qsh_copy_up(parent); //HOON
 	if (err)
 		return err;
 

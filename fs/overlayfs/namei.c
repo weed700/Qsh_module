@@ -832,7 +832,7 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
 		.metacopy = false,
 	};
     extern struct qsh_metadata qsh_mt; //HOON
-    struct dentry *qsh_destdir, *qsh_upperdentry = NULL; //HOON
+    struct dentry *qsh_pdir, *qsh_upperdentry = NULL; //HOON
     qsh_mt.qsh_tmp = NULL; //HOON
 
 	if (dentry->d_name.len > ofs->namelen)
@@ -843,9 +843,9 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
 
     printk("Q_sh : %s_start %s, numlower : %u\n",__func__,dentry->d_name.name,poe->numlower); //HOON
     //HOON 
-    qsh_destdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
-    if(qsh_destdir){
-        err = ovl_lookup_layer(qsh_destdir, &d, &qsh_upperdentry);
+    qsh_pdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
+    if(qsh_pdir){
+        err = ovl_lookup_layer(qsh_pdir, &d, &qsh_upperdentry);
         
         if(qsh_upperdentry){
             printk("Q_sh : %s my_upper : %s parent : %s\n",__func__,qsh_upperdentry->d_name.name,qsh_upperdentry->d_parent->d_name.name); //HOON

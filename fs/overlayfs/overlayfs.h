@@ -415,6 +415,7 @@ int ovl_set_attr(struct dentry *upper, struct kstat *stat);
 struct ovl_fh *ovl_encode_real_fh(struct dentry *real, bool is_upper);
 int ovl_set_origin(struct dentry *dentry, struct dentry *lower,
 		   struct dentry *upper);
+void qsh_copy_up(struct dentry *dentry); //HOON
 
 /* export.c */
 extern const struct export_operations ovl_export_operations;

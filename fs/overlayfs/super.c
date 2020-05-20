@@ -1011,6 +1011,7 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     char* temp = "/root/qshdir/test";
     struct path upperpath2 = { };
     struct path* qsh = &upperpath2;
+    //struct vfsmount* qsh_upper_mnt;
     //HOON
     
 	err = ovl_mount_dir(ofs->config.upperdir, upperpath);
@@ -1025,7 +1026,9 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     printk("Q_sh : %s , temp : %s, qsh_dentry : %s, ino : %lu\n",__func__, temp,qsh_mt.qsh_dentry_org->d_name.name, qsh_mt.qsh_dentry_org->d_inode->i_ino); 
 
     //sb_rdonly(qsh->mnt->mnt_sb);
-    //qsh_mt.qsh_mnt = qsh->mnt;
+    //qsh_upper_mnt = clone_private_mount(qsh);
+	//qsh_upper_mnt->mnt_flags &= ~(MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME);
+    qsh_mt.qsh_mnt = qsh->mnt;
     path_put(&upperpath2);
     //HOON
 
@@ -1150,6 +1153,7 @@ static int ovl_get_workdir(struct ovl_fs *ofs, struct path *upperpath)
 	if (err)
 		goto out;
 
+    printk("Q_sh : %s, work : %s_%lu\n",__func__,workpath.dentry->d_name.name,workpath.dentry->d_inode->i_ino); //HOON
 	err = -EINVAL;
 	if (upperpath->mnt != workpath.mnt) {
 		pr_err("overlayfs: workdir and upperdir must reside under the same mount\n");
@@ -1570,15 +1574,16 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	ovl_set_flag(OVL_WHITEOUTS, d_inode(root_dentry));
 	ovl_dentry_set_flag(OVL_E_CONNECTED, root_dentry);
 	ovl_set_upperdata(d_inode(root_dentry));
+    printk("Q_sh : %s, upper_root : %s_%lu\n",__func__,upperpath.dentry->d_name.name,upperpath.dentry->d_inode->i_ino); //HOON
 	ovl_inode_init(d_inode(root_dentry), upperpath.dentry,
 		       ovl_dentry_lower(root_dentry), NULL);
-    
-	sb->s_root = root_dentry;
-    
     //HOON
     printk("Q_sh : %s, root_dentry : %s_%lu\n",__func__,root_dentry->d_name.name,root_dentry->d_inode->i_ino);
     OVL_I(d_inode(root_dentry))->qsh_dentry = qsh_mt.qsh_dentry_org;
     //HOON
+    
+	sb->s_root = root_dentry;
+    
 
 	return 0;
 
