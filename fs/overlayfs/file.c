@@ -33,11 +33,12 @@ static struct file *ovl_open_realfile(const struct file *file,
 
     //HOON
     //if(0 == qsh_mt.qsh_flag)
-    //    printk("Q_sh : %s, ino : %lu, realino : %lu\n",__func__,inode->i_ino,realinode->i_ino);
+    printk("Q_sh : %s, ino : %lu, realino : %lu\n",__func__,inode->i_ino,realinode->i_ino);
     //HOON
 	old_cred = ovl_override_creds(inode->i_sb);
 	realfile = open_with_fake_path(&file->f_path, file->f_flags | O_NOATIME,
 				       realinode, current_cred());
+    printk("Q_sh : %s, realfile : %s_%lu\n",__func__,realfile->f_path.dentry->d_name.name,realfile->f_path.dentry->d_inode->i_ino);
 	revert_creds(old_cred);
 
 	pr_debug("open(%p[%pD2/%c], 0%o) -> (%p, 0%o)\n",
@@ -90,6 +91,7 @@ static int ovl_real_fdget_meta(const struct file *file, struct fd *real,
 {
 	struct inode *inode = file_inode(file);
 	struct inode *realinode;
+    struct dentry* qsh_dentry; //HOON
 
 	real->flags = 0;
 	real->file = file->private_data;
@@ -103,6 +105,14 @@ static int ovl_real_fdget_meta(const struct file *file, struct fd *real,
 		realinode = ovl_inode_real(inode);
 	else
 		realinode = ovl_inode_realdata(inode);
+
+    //HOON
+    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))) {
+        qsh_dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
+        realinode = qsh_dentry->d_inode;
+        printk("Q_sh : %s i_no : %lu\n",__func__,realinode->i_ino);
+    }
+    //HOON
 
 	/* Has it been copied up since we'd opened it? */
 	if (unlikely(file_inode(real->file) != realinode)) {
@@ -129,12 +139,8 @@ static int ovl_open(struct inode *inode, struct file *file)
 	struct dentry *dentry = file_dentry(file);
 	struct file *realfile;
 	int err; 
-    extern struct qsh_metadata qsh_mt; //HOON
-    
-    //HOON
-    if(0 == qsh_mt.qsh_flag)
-        printk("Q_sh : %s i_no : %lu, d_ino : %lu, d_name : %s\n",__func__,inode->i_ino,dentry->d_inode->i_ino,dentry->d_name.name);
-    //HOON
+    //extern struct qsh_metadata qsh_mt; //HOON
+    struct dentry* qsh_dentry; //HOON 
 
 	err = ovl_open_maybe_copy_up(dentry, file->f_flags);
 	if (err)
@@ -145,8 +151,14 @@ static int ovl_open(struct inode *inode, struct file *file)
 
 	realfile = ovl_open_realfile(file, ovl_inode_realdata(inode));
     //HOON
-    if(0 == qsh_mt.qsh_flag)
-        printk("Q_sh : %s_2 i_no : %lu file_ino : %lu, file_name : %s\n",__func__,realfile->f_inode->i_ino,file->f_inode->i_ino,realfile->f_path.dentry->d_name.name);
+    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))) {
+        qsh_dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
+        realfile = ovl_open_realfile(file, qsh_dentry->d_inode);
+        printk("Q_sh : %s_qsh ,%s_%lu\n",__func__,realfile->f_path.dentry->d_name.name,realfile->f_path.dentry->d_inode->i_ino);
+    }else{
+	    realfile = ovl_open_realfile(file, ovl_inode_realdata(inode));
+        printk("Q_sh : %s ,%s_%lu\n",__func__,realfile->f_path.dentry->d_name.name,realfile->f_path.dentry->d_inode->i_ino);
+    }
     //HOON
 	if (IS_ERR(realfile))
 		return PTR_ERR(realfile);
@@ -219,10 +231,12 @@ static ssize_t ovl_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 	const struct cred *old_cred;
 	ssize_t ret;
 
+    printk("Q_sh : %s %s_%lu\n",__func__,file->f_path.dentry->d_name.name,file->f_path.dentry->d_inode->i_ino); //HOON
 	if (!iov_iter_count(iter))
 		return 0;
 
 	ret = ovl_real_fdget(file, &real);
+    printk("Q_sh : %s real %s_%lu\n",__func__,real.file->f_path.dentry->d_name.name,real.file->f_path.dentry->d_inode->i_ino); //HOON
 	if (ret)
 		return ret;
 
@@ -248,7 +262,7 @@ static ssize_t ovl_write_iter(struct kiocb *iocb, struct iov_iter *iter)
 
     //HOON
     //if(0 == strcmp(file->f_path.dentry->d_name.name,"qsh.a"))
-    //    printk("Q_sh : %s i_no : %lu\n",__func__,inode->i_ino);
+    printk("Q_sh : %s , %s_%lu\n",__func__,file->f_path.dentry->d_name.name,inode->i_ino);
     //HOON
 
 	if (!iov_iter_count(iter))
@@ -312,6 +326,7 @@ static int ovl_mmap(struct file *file, struct vm_area_struct *vma)
 	const struct cred *old_cred;
 	int ret;
 
+    printk("Q_sh : %s \n",__func__); //HOON
 	if (!realfile->f_op->mmap)
 		return -ENODEV;
 
