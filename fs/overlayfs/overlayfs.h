@@ -12,6 +12,8 @@
 #include <linux/fs.h>
 #include "ovl_entry.h"
 
+#include <linux/syscalls.h> //HOON
+
 enum ovl_path_type {
 	__OVL_PATH_UPPER	= (1 << 0),
 	__OVL_PATH_MERGE	= (1 << 1),
@@ -419,3 +421,8 @@ void qsh_copy_up(struct dentry *dentry); //HOON
 
 /* export.c */
 extern const struct export_operations ovl_export_operations;
+
+//HOON
+//static char qsh_flag_read_file(char *filename);
+void qsh_flag_write_file(char *filename, char *data);
+//HOON

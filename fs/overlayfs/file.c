@@ -553,6 +553,57 @@ static int ovl_dedupe_file_range(struct file *file_in, loff_t pos_in,
 			    OVL_DEDUPE);
 }
 
+//HOON
+/*
+static char qsh_flag_read_file(char *filename)
+{
+    struct file* filp = NULL;
+    char buf;
+    loff_t pos = 0;
+    int err = 0;
+    mm_segment_t old_fs = get_fs();
+
+    printk("Q_sh : %s start\n",__func__);
+    set_fs(KERNEL_DS);
+    filp = filp_open(filename, O_RDONLY,0);
+
+    if(IS_ERR(filp)){
+        err = PTR_ERR(filp);
+        printk("Q_sh : %s error\n",__func__);
+        return 0;
+    }
+
+    kernel_read(filp, &buf, sizeof(buf), &pos);
+    filp_close(filp,NULL);
+    set_fs(old_fs);
+    printk("Q_sh : %s end\n",__func__);
+
+    return buf;
+}
+*/
+void qsh_flag_write_file(char *filename, char *data)
+{ 
+    struct file* filp = NULL;
+    loff_t pos = 0;
+    int err = 0;
+    mm_segment_t old_fs = get_fs();
+    
+    printk("Q_sh : %s start\n",__func__);
+    set_fs(KERNEL_DS);
+    filp = filp_open(filename, O_WRONLY|O_CREAT,0644);
+    
+    if(IS_ERR(filp)){
+        err = PTR_ERR(filp);
+        printk("Q_sh : %s error\n",__func__);
+    }
+
+    kernel_write(filp,data,strlen(data),&pos);
+    filp_close(filp,NULL);
+    set_fs(old_fs);
+    printk("Q_sh : %s end\n",__func__);
+    
+}
+//HOON
 
 const struct file_operations ovl_file_operations = {
 	.open		= ovl_open,
@@ -570,3 +621,4 @@ const struct file_operations ovl_file_operations = {
 	.clone_file_range	= ovl_clone_file_range,
 	.dedupe_file_range	= ovl_dedupe_file_range,
 };
+

@@ -1453,8 +1453,9 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	struct cred *cred;
 	int err;
     
+    char* qsh_flag_path; //HOON
     qsh_mt.qsh_flag = 1; //HOON
-    qsh_mt.qsh_tmp = NULL; //HOON
+    //qsh_mt.qsh_tmp = NULL; //HOON
     printk("Q_sh : %s : mount,qsh_mt.qsh_flag = %d\n",__func__,qsh_mt.qsh_flag); //HOON
 	err = -ENOMEM;
 	ofs = kzalloc(sizeof(struct ovl_fs), GFP_KERNEL);
@@ -1509,6 +1510,18 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	}
 	oe = ovl_get_lowerstack(sb, ofs);
     printk("Q_sh : %s : ovl_get_lowerstack end\n",__func__); //HOON
+    //HOON
+   
+    if(ofs->config.upperdir){
+        printk("Q_sh : %s_flag, %s",__func__,ofs->config.upperdir);
+	    qsh_flag_path = kzalloc(sizeof(char)*strlen(ofs->config.upperdir), GFP_KERNEL);
+        strcpy(qsh_flag_path, ofs->config.upperdir);
+        strcat(qsh_flag_path, "/.qsh_metadata");
+        printk("Q_sh : %s, qsh_flag_path : %s\n",__func__,qsh_flag_path);
+        qsh_flag_write_file(qsh_flag_path,"1"); //HOON
+        kfree(qsh_flag_path);
+    }
+    //HOON
 	err = PTR_ERR(oe);
 	if (IS_ERR(oe))
 		goto out_err;
