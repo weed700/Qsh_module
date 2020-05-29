@@ -1453,7 +1453,8 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	struct cred *cred;
 	int err;
     
-    char* qsh_flag_path; //HOON
+    char* qsh_flag_path = NULL; //HOON
+    char qsh_meta[15] = "/.qsh_metadata";
     qsh_mt.qsh_flag = 1; //HOON
     //qsh_mt.qsh_tmp = NULL; //HOON
     printk("Q_sh : %s : mount,qsh_mt.qsh_flag = %d\n",__func__,qsh_mt.qsh_flag); //HOON
@@ -1514,9 +1515,9 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
    
     if(ofs->config.upperdir){
         printk("Q_sh : %s_flag, %s",__func__,ofs->config.upperdir);
-	    qsh_flag_path = kzalloc(sizeof(char)*strlen(ofs->config.upperdir), GFP_KERNEL);
+	    qsh_flag_path = kzalloc(sizeof(char)*strlen(ofs->config.upperdir) + strlen(qsh_meta) , GFP_KERNEL);
         strcpy(qsh_flag_path, ofs->config.upperdir);
-        strcat(qsh_flag_path, "/.qsh_metadata");
+        strcat(qsh_flag_path, qsh_meta);
         printk("Q_sh : %s, qsh_flag_path : %s\n",__func__,qsh_flag_path);
         qsh_flag_write_file(qsh_flag_path,"1"); //HOON
         kfree(qsh_flag_path);
