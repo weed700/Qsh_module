@@ -304,12 +304,17 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     extern struct qsh_metadata qsh_mt; //HOON
     struct inode *qsh_udir; //HOON
     struct dentry *qsh_dentry_temp; //HOON
-    //char qsh_flag;
+    char* qsh_flag; //HOON
+    char qsh_meta[15] = "/.qsh_metadata"; //HOON
     
     //HOON
-    //qsh_flag = qsh_flag_read_file("/.qsh_metadata");
-    //if(qsh_flag)
-    //    printk("Q_sh : %s, flag_test : %c\n",__func__,qsh_flag);
+    qsh_flag = qsh_flag_read_file(qsh_meta);
+    if(*qsh_flag){
+        if('1' == *qsh_flag)
+            printk("Q_sh : %s, flag_test : %c\n",__func__,*qsh_flag);
+        else
+            printk("Q_sh : %s, flag_test else %c\n",__func__,*qsh_flag);
+    }
     //HOON
     
     

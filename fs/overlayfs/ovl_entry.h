@@ -108,6 +108,7 @@ struct ovl_inode {
 //HOON
 struct qsh_metadata{
     int qsh_flag;
+    //int qsh_cnt;
     struct dentry* qsh_tmp;
     struct dentry* qsh_dentry_org;
     //unsigned int qsh_lowernum;

@@ -423,6 +423,6 @@ void qsh_copy_up(struct dentry *dentry); //HOON
 extern const struct export_operations ovl_export_operations;
 
 //HOON
-//static char qsh_flag_read_file(char *filename);
-void qsh_flag_write_file(char *filename, char *data);
+void* qsh_flag_read_file(char *filename);
+int qsh_flag_write_file(char *filename, char *data);
 //HOON
