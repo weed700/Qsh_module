@@ -31,7 +31,7 @@
 //character device info
 #define DEVICE_NAME "qshdrv"
 static int qshdrv_major = 240;
-extern struct qsh_metadata qsh_mt;
+//extern struct qsh_metadata qsh_mt;
 
 /*qsh struct format*/
 typedef struct Qsh_quota_data{
@@ -216,7 +216,7 @@ static int __init qsh_mod_init(void)
     dev_t dev = MKDEV(qshdrv_major, 0);
     qsh_class = class_create(THIS_MODULE,DEVICE_NAME);
 
-    qsh_mt.qsh_flag = 0;
+    //qsh_mt.qsh_flag = 0;
     /*character device create*/
     if(qshdrv_major)
         re = register_chrdev_region(dev, 1, DEVICE_NAME);

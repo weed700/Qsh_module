@@ -48,13 +48,14 @@ static char read_file (char *filename)
 
 
 
-
 static int __init init(void)
 {
-    char qsh_flag;
-
+    //char qsh_flag;
+    long t;
     printk("<0> file handling start\n");
     qsh_flag = read_file("/root/.meta");
+    
+    //t = ksys_mkdir((const char __user __force *) "/root/0529_qsh", 0755);
     //write_file (“/etc/temp”, “foo”);
     printk("<0> file handing end : %c\n",qsh_flag);
 

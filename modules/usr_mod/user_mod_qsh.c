@@ -47,7 +47,7 @@ int qsh_script_exec(unsigned long long size, char* c_path)
     char temp[10];
     int i;
 
-    char sc[16][150]={
+    char sc[15][150]={
         {"#!/bin/bash\n"},
         {"dir=\"/root/qsh_host_\"\n"},
         {"path=$1\n"},
@@ -62,18 +62,19 @@ int qsh_script_exec(unsigned long long size, char* c_path)
         {"chmod 755 $dir\n"},
         {"(echo y;) | mkfs.xfs -f $path\n"},
         {"mount $path $dir\n"},
+        {"echo $path > qsh_path"}
     };  
 
-    char* base_dir = "/merged/root/qsh_bak_dir";
-    char* sh_tmp = (char*)malloc(sizeof(char)*150);
-    char mkdir_tmp[150];
+    //char* base_dir = "/merged/root/qsh_bak_dir";
+    //char* sh_tmp = (char*)malloc(sizeof(char)*150);
+    //char mkdir_tmp[150];
     FILE* fp; 
 
-    sprintf(mkdir_tmp,"mkdir %s%s\n",c_path,base_dir);
-    strcpy(sc[14],mkdir_tmp);
+    //sprintf(mkdir_tmp,"mkdir %s%s\n",c_path,base_dir);
+    //strcpy(sc[14],mkdir_tmp);
 
-    sprintf(sh_tmp,"mount --bind $dir %s%s",c_path,base_dir);  
-    strcpy(sc[15],sh_tmp);
+    //sprintf(sh_tmp,"mount --bind $dir %s%s",c_path,base_dir);  
+    //strcpy(sc[15],sh_tmp);
 
     fp = fopen(shellpath,"w");
     if(NULL == fp) 
@@ -97,8 +98,8 @@ int qsh_script_exec(unsigned long long size, char* c_path)
   
     system(shellex);
     
-    remove(shellpath);
-    free(sh_tmp);
+    //remove(shellpath);
+    //free(sh_tmp);
     free(shellex);
 
     return 0;
