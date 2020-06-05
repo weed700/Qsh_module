@@ -1010,7 +1010,6 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     int err2;
     char* temp2 = "/root/qshdir/temp";
     char* path;
-    //char temp[50];
     struct path upperpath2 = { };
     struct path* qsh = &upperpath2;
     char* ptr;
@@ -1024,9 +1023,6 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
 	err = ovl_mount_dir(ofs->config.upperdir, upperpath);
     printk("Q_sh : %s , ofs->config.upperdir : %s, upperpath_ino : %lu\n",__func__,ofs->config.upperdir,upperpath->dentry->d_inode->i_ino); //HOON
 	
-    //strcpy(temp,ofs->config.upperdir);
-    //strcat(temp,path);
-    //printk("Q_sh : %s , temp : %s\n",__func__,temp);
     if (err)
 		goto out;
     //HOON
