@@ -2,7 +2,8 @@
 
 #define SIG_TEST 44
 #define SPARE_DISK "/dev/nvme2n1"
-
+#define DEFAULT_SIZE 600
+#define MAX_CON 5
 Node* List = NULL;          //리스트 헤더
 Node* Current = NULL;       //리스트 탐색할 때 필요
 Node* NewNode = NULL;       //새로운 노드
@@ -13,6 +14,10 @@ pthread_t thread;
 
 int dev;                    //장치 디스크립터 
 int Count = 0;              //노드 개수
+
+q_data_t data[MAX_CON];
+int q_con = 0;
+
 
 void thread_clean_up(void* arg)
 {
@@ -40,6 +45,7 @@ static void signal_cleanup(int n, siginfo_t* info, void* unused)
     pthread_cancel(thread); //thread 종료  
 }
 
+/*
 int qsh_script_exec(unsigned long long size, char* c_path)
 {
     char* shellex;                              //실행 시킬 명령어
@@ -105,6 +111,7 @@ int qsh_script_exec(unsigned long long size, char* c_path)
     return 0;
 
 }
+*/
 
 void sigio_handler(int signo)
 {
@@ -121,17 +128,24 @@ void sigio_handler(int signo)
     read(fd,&d,sizeof(d));
 
     syslog(LOG_INFO | LOG_LOCAL0,"test : %u %s %s\n",d.id, d.special,d.con_path);
+    
+    if(5 == q_con)
+        q_con = 0;
 
+    data[q_con].id = d.id;
+    strcpy(data[q_con].special,d.special);
+    strcpy(data[q_con].con_path,d.con_path);
+    q_con++;
 
     //새로운 노드 생성
     NewNode = Qsh_CreateNode(d);
     Qsh_AppendNode(&List, NewNode);
 
     //script 실행(예비 디스크 파티션 나누기 및 host 디렉토리 mount)
-    quotactl(Q_XGETPQUOTA,NewNode->Data.special,NewNode->Data.id,&temp_d); //생성된 컨테이너의 디스크 용량 받아오기
-    syslog(LOG_INFO | LOG_LOCAL0,"disk size : %u : %llu MB!!!!!!\n",temp_d.d_id, ((temp_d.d_blk_hardlimit*512)/1024)/1024);
+    //quotactl(Q_XGETPQUOTA,NewNode->Data.special,NewNode->Data.id,&temp_d); //생성된 컨테이너의 디스크 용량 받아오기
+    //syslog(LOG_INFO | LOG_LOCAL0,"disk size : %u : %llu MB!!!!!!\n",temp_d.d_id, ((temp_d.d_blk_hardlimit*512)/1024)/1024);
 
-    qsh_script_exec(temp_d.d_blk_hardlimit, d.con_path);
+    //qsh_script_exec(temp_d.d_blk_hardlimit, d.con_path);
     close(fd);
 }
 
@@ -140,11 +154,32 @@ int init_script()
     char* shellex;                              //실행 시킬 명령어
     char shellpath[30]="/root/init_sh_qsh.sh";  //script가 생성될 위치
     int i;
+    char size_tmp[10];
+    int count = 5;
+    int size;
 
-    char sc[][100]={
+    char sc[][150]={
         {"#!/bin/bash\n"},
         {"path=$1\n"},
         {"(echo n; echo e; echo \"\"; echo \"\"; echo \"\"; echo w;) | fdisk $path\n"},
+        {"size=$2\n"},
+        {"size='+'$size\n"},
+        {"for((i=0; i<$3; i++))\n"},
+        {"do\n"},
+        {"    echo -n 0\\ >> /root/qsh_backup_disk/qsh_path\n"},
+        {"    dir=\"/root/qsh_backup_disk/qsh_host_\"\n"},
+        {"    (echo n; echo l; echo \"\"; echo $size; echo w;) | fdisk $path\n"},
+        {"    partprobe\n"},
+        {"    path_tmp=`fdisk -l $path | tail -n 1 | cut -d ' ' -f1`\n"},
+        {"    path_sl=${path_tmp:5}\n"},
+        {"    dir=$dir$path_sl\n"},
+        {"    mkdir $dir\n"},
+        {"    chmod 755 $dir\n"},
+        {"    (echo y;) | mkfs.xfs -f $path_tmp\n"},
+        {"    mount $path_tmp $dir\n"},
+        {"    echo -n $dir\\ >> /root/qsh_backup_disk/qsh_path\n"},
+        {"done\n"},
+        {"mkdir /root/qsh_backup_disk/temp\n"},
     };  
 
     FILE* fp; 
@@ -163,10 +198,13 @@ int init_script()
 
     shellex = (char*)malloc(sizeof(char)*50); 
 
-    sprintf(shellex,"%s %s",shellpath,SPARE_DISK);    
+    size = DEFAULT_SIZE/count;
+    sprintf(size_tmp,"%dG",size);
+
+    sprintf(shellex,"%s %s %s %d",shellpath,SPARE_DISK,size_tmp,count);    
     system(shellex);
 
-    remove(shellpath);
+    //remove(shellpath);
     free(shellex);
 
     return 0;
@@ -180,8 +218,11 @@ void* main_thread(void* arg)
     int oflag;
 //    int flag = 0;
 
-    int i=0;
+    int i=0,j;
     fs_disk_quota_t d;
+    char *qsh_mt = "/diff/.qsh_mt";  
+    char *path;
+    int fd;
 
     pid_t pid;
     
@@ -215,11 +256,12 @@ void* main_thread(void* arg)
     }
 
     //init_script
-    if(-1 == init_script())
-        syslog(LOG_INFO | LOG_LOCAL0,"init_script() erorr!\n"); 
+   // if(-1 == init_script())
+    //    syslog(LOG_INFO | LOG_LOCAL0,"init_script() erorr!\n"); 
+   
     
 
-    //fcntl 파일 디스크립트
+    //fcntl 파일 디스크립트 
     dev = open(DEVICE_NAME, O_RDWR);
    
     if(0 <= dev)
@@ -237,9 +279,9 @@ void* main_thread(void* arg)
      {
         if(NULL != List)
         {            
-            /* 노드 찾아서 출력*/
+            // 노드 찾아서 출력
             Count = Qsh_GetNodeCount(List);
-            printf("--- ProjID    block_count    UsedDisk(KB)    Con_total_size(MB) ---\n");
+            printf("--- ProjID    block_count    UsedDisk(KB), Use(%)    Con_total_size(MB) ---\n");
             printf("-------------------------------------------------------------------\n");
             for(i=0;i < Count;i++)
             {
@@ -247,12 +289,34 @@ void* main_thread(void* arg)
                 quotactl(Q_XGETPQUOTA,Current->Data.special,Current->Data.id,&d);
                 syslog(LOG_INFO | LOG_LOCAL0,"ID : %u,  block_count : %llu ,UsedDisk: %llu KB, ConSize : %llu\n",d.d_id, d.d_bcount ,(d.d_bcount*512)/1024, ((d.d_blk_hardlimit*512)/1024)/1024);
 //                printf("--- ProjID    block_count    UsedDisk(KB)    Con_total_size(MB) ---\n");
-                printf("     %u        %llu         %llu                   %llu\n",d.d_id, d.d_bcount, (d.d_bcount*512)/1024, ((d.d_blk_hardlimit*512)/1024)/1024);
+                printf("     %u        %llu         %llu, %.f%%                   %llu\n",d.d_id, d.d_bcount, (d.d_bcount*512)/1024,(float)(d.d_bcount*512)/(d.d_blk_hardlimit*512)*100, ((d.d_blk_hardlimit*512)/1024)/1024);
+
+                if(5 < (float)(d.d_bcount*512)/(d.d_blk_hardlimit*512)*100){
+                    for(j=0;j<MAX_CON;j++)
+                    {
+                        if(data[j].id == d.d_id)
+                        {
+                            path = calloc(strlen(data[j].con_path)+strlen(qsh_mt),sizeof(char));
+                            sprintf(path,"%s%s",data[j].con_path,qsh_mt);
+                            //printf("over : %s\n",path);
+                            
+                            if(0 < (fd = open(path,O_RDWR)))
+                            {
+                                write(fd, "0",1);
+                                close(fd);
+                            }
+
+                            free(path);
+                            break;
+                        }
+                    }
+                }
             }
         }
         sleep(10);
      }
-
+    
+    
     //cleanup handler 해제
     pthread_cleanup_pop(0);
 }
