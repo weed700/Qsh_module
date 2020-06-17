@@ -554,10 +554,10 @@ static int ovl_dedupe_file_range(struct file *file_in, loff_t pos_in,
 }
 
 //HOON
-void* qsh_flag_read_file(char *filename)
+char* qsh_flag_read_file(char *filename, int buf_size)
 {
     struct file* filp = NULL;
-    void* buf;
+    char* buf;
     loff_t pos = 0;
     int err = 0;
 
@@ -570,7 +570,9 @@ void* qsh_flag_read_file(char *filename)
         return 0;
     }
 
-    kernel_read(filp, buf, sizeof(buf), &pos);
+    buf = kmalloc(sizeof(char)*buf_size, GFP_KERNEL);
+
+    kernel_read(filp, buf, buf_size, &pos);
     filp_close(filp,NULL);
     printk("Q_sh : %s end\n",__func__);
 
@@ -582,10 +584,8 @@ int qsh_flag_write_file(char *filename, char *data)
     struct file* filp = NULL;
     loff_t pos = 0;
     int err = 0;
-    //mm_segment_t old_fs = get_fs();
     
     printk("Q_sh : %s start\n",__func__);
-    //set_fs(KERNEL_DS);
     filp = filp_open(filename, O_WRONLY|O_CREAT|O_EXCL,0644);
     
     if(IS_ERR(filp)){
@@ -596,7 +596,6 @@ int qsh_flag_write_file(char *filename, char *data)
 
     kernel_write(filp,data,strlen(data),&pos);
     filp_close(filp,NULL);
-    //set_fs(old_fs);
     printk("Q_sh : %s end\n",__func__);
     
     return 0;
