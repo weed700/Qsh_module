@@ -313,16 +313,17 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
         if(qsh_flag){
             if('1' == *qsh_flag)
                 printk("Q_sh : %s, flag_test : %c\n",__func__,*qsh_flag);
-            else
+            else{
                 printk("Q_sh : %s, flag_test else %c\n",__func__,*qsh_flag);
+            }
         }
-        kfree(qsh_flag);
     }
     //HOON
     
     
     //HOON
-    if(0 == qsh_mt.qsh_flag){
+    if(0 == qsh_mt.qsh_flag2 && '0' == *qsh_flag){
+    //if('0' == *qsh_flag){
         printk("Q_sh : %s, dentry_p : %lu_%s udir change start\n",__func__,dentry->d_parent->d_inode->i_ino,dentry->d_parent->d_name.name); //HOON
         if(NULL == qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent))))
             printk("Q_sh : %s, NULL\n",__func__);
@@ -342,7 +343,8 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     inode_lock_nested(udir, I_MUTEX_PARENT);
 
     //HOON
-    if(0 == qsh_mt.qsh_flag) {
+    if(0 == qsh_mt.qsh_flag2 && '0' == *qsh_flag) {
+    //if('0' == *qsh_flag){
         newdentry = ovl_create_real(qsh_udir,
                 lookup_one_len(dentry->d_name.name,
                         qsh_dentry_temp,
@@ -383,6 +385,7 @@ out_unlock:
 out_cleanup:
 	ovl_cleanup(udir, newdentry);
 	dput(newdentry);
+    kfree(qsh_flag); //HOON
 	goto out_unlock;
 }
 
