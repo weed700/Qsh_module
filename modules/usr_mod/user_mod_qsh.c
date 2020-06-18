@@ -204,7 +204,7 @@ int init_script()
     sprintf(shellex,"%s %s %s %d",shellpath,SPARE_DISK,size_tmp,count);    
     system(shellex);
 
-    //remove(shellpath);
+    remove(shellpath);
     free(shellex);
 
     return 0;
@@ -256,8 +256,8 @@ void* main_thread(void* arg)
     }
 
     //init_script
-   // if(-1 == init_script())
-    //    syslog(LOG_INFO | LOG_LOCAL0,"init_script() erorr!\n"); 
+    if(-1 == init_script())
+        syslog(LOG_INFO | LOG_LOCAL0,"init_script() erorr!\n"); 
    
     
 
