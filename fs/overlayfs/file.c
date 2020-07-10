@@ -579,25 +579,47 @@ char* qsh_flag_read_file(char *filename, int buf_size)
     return buf;
 }
 
-int qsh_flag_write_file(char *filename, char *data)
+int qsh_flag_write_file(char *filename, char *data, int size)
 { 
     struct file* filp = NULL;
     loff_t pos = 0;
     int err = 0;
-    
+
     printk("Q_sh : %s start\n",__func__);
-    filp = filp_open(filename, O_WRONLY|O_CREAT|O_EXCL,0644);
-    
+    filp = filp_open(filename, O_CREAT|O_WRONLY|O_TRUNC,0644);
+
     if(IS_ERR(filp)){
         err = PTR_ERR(filp);
         printk("Q_sh : %s error\n",__func__);
         return -1;
     }
 
-    kernel_write(filp,data,strlen(data),&pos);
+    kernel_write(filp,data,size,&pos);
     filp_close(filp,NULL);
     printk("Q_sh : %s end\n",__func__);
-    
+
+    return 0;
+}
+
+int qsh_flag_write_file_append(char *filename, char *data, int size)
+{ 
+    struct file* filp = NULL;
+    loff_t pos = 0;
+    int err = 0;
+
+    printk("Q_sh : %s start\n",__func__);
+    filp = filp_open(filename, O_CREAT|O_WRONLY|O_APPEND,0644);
+
+    if(IS_ERR(filp)){
+        err = PTR_ERR(filp);
+        printk("Q_sh : %s error\n",__func__);
+        return -1;
+    }
+
+    kernel_write(filp,data,size,&pos);
+    filp_close(filp,NULL);
+    printk("Q_sh : %s end\n",__func__);
+
     return 0;
 }
 //HOON

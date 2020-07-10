@@ -987,6 +987,7 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
         printk("Q_sh : %s_if\n",__func__); //HOON
         qshpath.dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
         qshpath.mnt = qsh_mt.qsh_mnt;
+        printk("Q_sh : %s_if qshpath : %s\n",__func__,qshpath.dentry->d_name.name); //HOON
         od->qsh_realfile = ovl_path_open(&qshpath, O_RDONLY | O_DIRECTORY);
         //qsh_mt.qsh_path = &qshpath;
         //qsh_mt.qsh_file = ovl_path_open(&qshpath, O_RDONLY | O_DIRECTORY);

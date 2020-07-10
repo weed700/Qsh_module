@@ -424,5 +424,6 @@ extern const struct export_operations ovl_export_operations;
 
 //HOON
 char* qsh_flag_read_file(char *filename, int buf_size);
-int qsh_flag_write_file(char *filename, char *data);
+int qsh_flag_write_file(char *filename, char *data, int size);
+int qsh_flag_write_file_append(char *filename, char *data, int size);
 //HOON

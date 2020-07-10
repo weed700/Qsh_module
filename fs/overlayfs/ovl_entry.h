@@ -106,19 +106,20 @@ struct ovl_inode {
 };
 
 //HOON
+/*
 struct qsh_path_t{
     char flag;
     char path[50];
 };
-
+*/
 struct qsh_metadata{
     int qsh_flag;
-    int qsh_flag2;
     struct dentry* qsh_tmp;
     struct dentry* qsh_dentry_org;
     //unsigned int qsh_lowernum;
 	struct vfsmount *qsh_mnt;
-    struct qsh_path_t qsh_path[5];
+    int qsh_con_id[5];
+    //struct qsh_path_t qsh_path[5];
     //struct path* qsh_path; 
     //struct inode qsh_vfs_inode;
     //struct file* qsh_file;

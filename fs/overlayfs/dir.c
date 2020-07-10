@@ -301,29 +301,32 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
 	struct inode *udir = upperdir->d_inode;
 	struct dentry *newdentry;
 	int err;
-    extern struct qsh_metadata qsh_mt; //HOON
+    //extern struct qsh_metadata qsh_mt; //HOON
     struct inode *qsh_udir; //HOON
     struct dentry *qsh_dentry_temp; //HOON
-    char* qsh_flag; //HOON
+    char *qsh_flag; //HOON
     char qsh_meta[9] = "/.qsh_mt"; //HOON
     
     //HOON
-    if(0 == qsh_mt.qsh_flag2){
-        qsh_flag = qsh_flag_read_file(qsh_meta,1);
-        if(qsh_flag){
-            if('1' == *qsh_flag)
-                printk("Q_sh : %s, flag_test : %c\n",__func__,*qsh_flag);
+    /*
+    if(0 == qsh_mt.qsh_flag){
+        qsh_flag = qsh_flag_read_file(qsh_meta,2);
+        if( NULL == qsh_flag){
+            if(0 == strcmp("10",qsh_flag))
+                printk("Q_sh : %s, flag_test : %s\n",__func__,qsh_flag);
             else{
-                printk("Q_sh : %s, flag_test else %c\n",__func__,*qsh_flag);
+                printk("Q_sh : %s, flag_test else %s\n",__func__,qsh_flag);
             }
         }
     }
+    */
+    qsh_flag = qsh_flag_read_file(qsh_meta,3);
     //HOON
     
     
     //HOON
-    if(0 == qsh_mt.qsh_flag2 && '0' == *qsh_flag){
-    //if('0' == *qsh_flag){
+    //if(0 == qsh_mt.qsh_flag && '0' == *qsh_flag){
+    if(0 == strcmp("00",qsh_flag)){
         printk("Q_sh : %s, dentry_p : %lu_%s udir change start\n",__func__,dentry->d_parent->d_inode->i_ino,dentry->d_parent->d_name.name); //HOON
         if(NULL == qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent))))
             printk("Q_sh : %s, NULL\n",__func__);
@@ -343,17 +346,17 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     inode_lock_nested(udir, I_MUTEX_PARENT);
 
     //HOON
-    if(0 == qsh_mt.qsh_flag2 && '0' == *qsh_flag) {
-    //if('0' == *qsh_flag){
+    //if(0 == qsh_mt.qsh_flag && '0' == *qsh_flag) {
+    if(0 == strcmp("00",qsh_flag)){
         newdentry = ovl_create_real(qsh_udir,
                 lookup_one_len(dentry->d_name.name,
                         qsh_dentry_temp,
                         dentry->d_name.len),
                     attr);    
-        printk("Q_sh : %s, qsh_flag : %d, newdentry_ino : %lu, newp_ino : %lu, newp_name : %s\n",__func__,qsh_mt.qsh_flag,newdentry->d_inode->i_ino, newdentry->d_inode->i_ino,newdentry->d_name.name);
+        printk("Q_sh : %s, newdentry_ino : %lu, newp_ino : %lu, newp_name : %s\n",__func__,newdentry->d_inode->i_ino, newdentry->d_inode->i_ino,newdentry->d_name.name);
         inode_unlock(qsh_udir);
     }else{
-        printk("Q_sh : %s, qsh_flag : %d, upperdir_ino : %lu, dentry+name : %s\n",__func__,qsh_mt.qsh_flag,upperdir->d_inode->i_ino,dentry->d_name.name);
+        printk("Q_sh : %s, upperdir_ino : %lu, dentry+name : %s\n",__func__,upperdir->d_inode->i_ino,dentry->d_name.name);
         newdentry = ovl_create_real(udir,
                 lookup_one_len(dentry->d_name.name,
                     upperdir,

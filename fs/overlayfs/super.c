@@ -1012,11 +1012,18 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     char* path;
     struct path upperpath2 = { };
     struct path* qsh = &upperpath2;
-    char* ptr;
+    char* ptr1;
+    char* ptr2;
     char* ptext;
+    char* path_p = "/root/qsh_backup_disk/qsh_path";
+    char* space = " ";
     char tmp[100];
     int i = 0;
+    char qsh_path_flag[5]={0,};
+    char qsh_path_path[5][50]={{0,},};
+    int qsh_con_flag;
     qsh_mt.qsh_mnt = NULL;
+
     //HOON
     
 	err = ovl_mount_dir(ofs->config.upperdir, upperpath);
@@ -1030,41 +1037,46 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     printk("Q_sh : %s tmp :  %s\n",__func__,tmp);
     ptext = tmp;
 
-    while(NULL != (ptr = strsep(&ptext,"-")))
+    while(NULL != (ptr1 = strsep(&ptext,"-")))
     {
-        printk("Q_sh : %s %s\n",__func__,ptr);
-        if(0 == strcmp("opaque",ptr) || 0 == strcmp("init",ptr)){
-            qsh_mt.qsh_flag2 = 1;
+        printk("Q_sh : %s %s\n",__func__,ptr1);
+        if(0 == strcmp("opaque",ptr1) || 0 == strcmp("init",ptr1)){
+            qsh_mt.qsh_flag = 1;
             break;
         }
         else
-            qsh_mt.qsh_flag2 = 0;
+            qsh_mt.qsh_flag = 0;
     }
-
-    if(0 == qsh_mt.qsh_flag2){ 
-        path = qsh_flag_read_file("/root/qsh_backup_disk/qsh_path",215);
-        while(NULL != (ptr = strsep(&path," ")))
+   
+    if(0 == qsh_mt.qsh_flag){      
+        
+        path = qsh_flag_read_file(path_p,215);
+        printk("Q_sh : %s , path = %s\n",__func__,path);
+        while(NULL != (ptr2 = strsep(&path," ")))
         {
             if(5 == i)
                 break;
             //printk("Q_sh : %s_split2 %s %d\n",__func__,ptr,i);
-            if(0 == strcmp("0",ptr)){
-                strcpy(&qsh_mt.qsh_path[i].flag,ptr);
-                printk("Q_sh : %s_split_if ptr : %s flag : %c\n",__func__,ptr,qsh_mt.qsh_path[i].flag);
+            if(0 == strcmp("0",ptr2) || 0 == strcmp("1",ptr2)){
+                //strcpy(&qsh_mt.qsh_path[i].flag,ptr);
+                strcpy(&qsh_path_flag[i],ptr2);
+                //qsh_path_flag[i] = ptr;
+                printk("Q_sh : %s_split_if ptr2 : %s flag : %c\n",__func__,ptr2,qsh_path_flag[i]);
             }
             else{
-                strcpy(qsh_mt.qsh_path[i].path,ptr);
-                printk("Q_sh : %s_split_else ptr : %s path : %s\n",__func__,ptr,qsh_mt.qsh_path[i].path);
+                strcpy(qsh_path_path[i],ptr2);
+                printk("Q_sh : %s_split_else ptr2 : %s path : %s\n",__func__,ptr2,qsh_path_path[i]);
                 i++;
             }
         }
         kfree(path);
-           
+        
+        
         for(i=0;i<5;i++)
         {
-            if('0' == qsh_mt.qsh_path[i].flag)
+            if('0' == qsh_path_flag[i])
             {
-                err2 = ovl_mount_dir(qsh_mt.qsh_path[i].path, qsh); //HOON
+                err2 = ovl_mount_dir(qsh_path_path[i], qsh); //HOON
                 if(err2)
                     goto out;
                 qsh_mt.qsh_dentry_org = qsh->dentry;
@@ -1072,8 +1084,37 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
                 
                 qsh_mt.qsh_mnt = qsh->mnt;
                 path_put(&upperpath2);
-                qsh_mt.qsh_path[i].flag = '1';
+                qsh_path_flag[i] = '1';
+                qsh_mt.qsh_con_id[i] = 1;
+                qsh_flag_write_file(path_p,"",0);
                 break;
+            }else{
+                if(1 == qsh_mt.qsh_con_id[i]){
+                    err2 = ovl_mount_dir(qsh_path_path[i], qsh); //HOON
+                    if(err2)
+                        goto out;
+                    qsh_mt.qsh_dentry_org = qsh->dentry;
+                
+                    qsh_mt.qsh_mnt = qsh->mnt;
+                    path_put(&upperpath2);
+                    
+                    qsh_con_flag = 1;
+                    qsh_mt.qsh_con_id[i] = 0;
+                    break;
+                }
+                else
+                    qsh_con_flag = 0;
+            }
+        }   
+        if(0 == qsh_con_flag){
+            for(i=0;i<5;i++)
+            {
+                printk("Q_sh : %s qsh_path_flag : %c, qsh_path_path : %s",__func__,qsh_path_flag[i],qsh_path_path[i]);
+                qsh_flag_write_file_append(path_p,&qsh_path_flag[i],1);
+                qsh_flag_write_file_append(path_p,space,strlen(space));
+                qsh_flag_write_file_append(path_p,qsh_path_path[i],strlen(qsh_path_path[i]));
+                if(4 != i)
+                    qsh_flag_write_file_append(path_p,space,strlen(space));
             }
         }
     }else{
@@ -1512,11 +1553,11 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
     
     char qsh_flag_path[500]; //HOON
     char qsh_meta[9] = "/.qsh_mt"; //HOON
-    qsh_mt.qsh_flag = 1; //HOON
-    qsh_mt.qsh_flag2 = 0; //HOON
+    qsh_mt.qsh_flag = 0; //HOON
+    //qsh_mt.qsh_flag2 = 0; //HOON
 	qsh_mt.qsh_tmp = NULL; //HOON
     
-    printk("Q_sh : %s : mount,qsh_mt.qsh_flag = %d\n",__func__,qsh_mt.qsh_flag); //HOON
+    //printk("Q_sh : %s : mount,qsh_mt.qsh_flag = %d\n",__func__,qsh_mt.qsh_flag); //HOON
     err = -ENOMEM;
 	ofs = kzalloc(sizeof(struct ovl_fs), GFP_KERNEL);
 	if (!ofs)
@@ -1574,15 +1615,15 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
     //HOON
     
     printk("Q_sh : %s : qsh_meta : %s\n",__func__,qsh_meta); //HOON
-    qsh_flag_write_file(qsh_meta,"1");
-    if(0 == qsh_mt.qsh_flag2){
+    qsh_flag_write_file(qsh_meta,"11\0",3);
+    if(0 == qsh_mt.qsh_flag){
         //printk("Q_sh : %s_flag, %s, len : %zd, %zd\n",__func__,ofs->config.upperdir,strlen(ofs->config.upperdir),strlen(qsh_meta));
 	    //qsh_flag_path = (char*)kzalloc(sizeof(char)*(strlen(ofs->config.upperdir) + strlen(qsh_meta)) , GFP_KERNEL);
         memset(qsh_flag_path,0,500);
         strcpy(qsh_flag_path, ofs->config.upperdir);
         strcat(qsh_flag_path, qsh_meta);
         printk("Q_sh : %s, qsh_flag_path : %s\n",__func__,qsh_flag_path);
-        qsh_flag_write_file(qsh_flag_path,"1"); //HOON
+        qsh_flag_write_file(qsh_flag_path,"10\0",3); //HOON
         //kfree(qsh_flag_path);
     }
     
