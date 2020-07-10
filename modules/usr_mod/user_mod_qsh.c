@@ -257,8 +257,7 @@ void* main_thread(void* arg)
 
     //init_script
     if(-1 == init_script())
-        syslog(LOG_INFO | LOG_LOCAL0,"init_script() erorr!\n"); 
-   
+        syslog(LOG_INFO | LOG_LOCAL0,"init_script() erorr!\n");  
     
 
     //fcntl 파일 디스크립트 
@@ -302,7 +301,7 @@ void* main_thread(void* arg)
                             
                             if(0 < (fd = open(path,O_RDWR)))
                             {
-                                write(fd, "0",1);
+                                write(fd, "00\0",3);
                                 close(fd);
                             }
 
