@@ -1023,7 +1023,6 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     char qsh_path_path[5][50]={{0,},};
     int qsh_con_flag;
     qsh_mt.qsh_mnt = NULL;
-
     //HOON
     
 	err = ovl_mount_dir(ofs->config.upperdir, upperpath);
