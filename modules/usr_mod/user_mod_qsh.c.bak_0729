@@ -16,7 +16,6 @@ int dev;                    //장치 디스크립터
 int Count = 0;              //노드 개수
 
 q_data_t data[MAX_CON];
-q_pid_path[MAX_CON];
 int q_con = 0;
 
 
@@ -46,14 +45,82 @@ static void signal_cleanup(int n, siginfo_t* info, void* unused)
     pthread_cancel(thread); //thread 종료  
 }
 
+/*
+int qsh_script_exec(unsigned long long size, char* c_path)
+{
+    char* shellex;                              //실행 시킬 명령어
+    char shellpath[30]="/root/exec_sh_qsh.sh";  //script가 생성될 위치
+    char temp[10];
+    int i;
+
+    char sc[15][150]={
+        {"#!/bin/bash\n"},
+        {"dir=\"/root/qsh_host_\"\n"},
+        {"path=$1\n"},
+        {"size=$2\n"},
+        {"size='+'$size\n"},
+        {"(echo n; echo l; echo \"\"; echo $size; echo w;) | fdisk $path\n"},
+        {"partprobe\n"},
+        {"path=`fdisk -l $path | tail -n 1 | cut -d ' ' -f1`\n"},
+        {"path_sl=${path:5}\n"},
+        {"dir=$dir$path_sl\n"},
+        {"mkdir $dir\n"},
+        {"chmod 755 $dir\n"},
+        {"(echo y;) | mkfs.xfs -f $path\n"},
+        {"mount $path $dir\n"},
+        {"echo $path > qsh_path"}
+    };  
+
+    //char* base_dir = "/merged/root/qsh_bak_dir";
+    //char* sh_tmp = (char*)malloc(sizeof(char)*150);
+    //char mkdir_tmp[150];
+    FILE* fp; 
+
+    //sprintf(mkdir_tmp,"mkdir %s%s\n",c_path,base_dir);
+    //strcpy(sc[14],mkdir_tmp);
+
+    //sprintf(sh_tmp,"mount --bind $dir %s%s",c_path,base_dir);  
+    //strcpy(sc[15],sh_tmp);
+
+    fp = fopen(shellpath,"w");
+    if(NULL == fp) 
+        return -1; 
+    
+    for(i = 0;i<sizeof(sc)/sizeof(sc[0]);i++)
+        fwrite(sc[i],1,strlen(sc[i]),fp);
+ 
+    fclose(fp);
+
+    if(-1 == chmod(shellpath,0755))
+        return -1;
+
+    size = (((size*512)/1024)/1024)*10;
+    sprintf(temp,"%lluM",size);
+
+    shellex = (char*)malloc(sizeof(char)*50); 
+
+    sprintf(shellex,"%s %s %s",shellpath,SPARE_DISK,temp);
+    syslog(LOG_INFO | LOG_LOCAL0,"qsh_script_exec : %s\n",shellex);
+  
+    system(shellex);
+    
+    //remove(shellpath);
+    //free(sh_tmp);
+    free(shellex);
+
+    return 0;
+
+}
+*/
+
 void sigio_handler(int signo)
 {
     syslog(LOG_INFO | LOG_LOCAL0,"sigio_handler!!\n");
     
     q_data_t d;
     int fd;
-    fs_disk_quota_t temp_d;   
-    
+    fs_disk_quota_t temp_d;
+
     fd = open(DEVICE_NAME, O_RDONLY);
     
     syslog(LOG_INFO | LOG_LOCAL0,"sigio_handler in!\n");
@@ -72,8 +139,13 @@ void sigio_handler(int signo)
 
     //새로운 노드 생성
     NewNode = Qsh_CreateNode(d);
-    Qsh_AppendNode(&List, NewNode); 
+    Qsh_AppendNode(&List, NewNode);
 
+    //script 실행(예비 디스크 파티션 나누기 및 host 디렉토리 mount)
+    //quotactl(Q_XGETPQUOTA,NewNode->Data.special,NewNode->Data.id,&temp_d); //생성된 컨테이너의 디스크 용량 받아오기
+    //syslog(LOG_INFO | LOG_LOCAL0,"disk size : %u : %llu MB!!!!!!\n",temp_d.d_id, ((temp_d.d_blk_hardlimit*512)/1024)/1024);
+
+    //qsh_script_exec(temp_d.d_blk_hardlimit, d.con_path);
     close(fd);
 }
 
@@ -138,55 +210,6 @@ int init_script()
     return 0;
 }
 
-int exit_check_script()
-{
-    char path[40] = "/root/qsh_backup_disk/exit_check_sc.sh";
-    int i;
-    char sc[][150]={
-        {"#!/bin/bash\n"},
-        {"flag=0\n"},
-        {"docker ps -a | awk -F \"        \" '{printf(\"%s\\n\",$1)}' > ps_a\n"},
-        {"docker ps | awk -F \"        \" '{printf(\"%s\\n\",$1)}' > ps\n"},
-        {"while read A\n"},
-        {"do\n"},
-        {"    if [ \"$A\" != \"CONTAINER ID\" ]\n"},
-        {"    then\n"},
-        {"        while read B\n"},
-        {"        do\n"},
-        {"            if [ \"$B\" != \"CONTAINER ID\" ]\n"},
-        {"            then\n"},
-        {"                if [ \"$A\" == \"$B\" ]\n"},
-        {"                then\n"},
-        {"                    flag=1\n"},
-        {"                fi\n"},
-        {"            fi\n"},
-        {"        done < ps\n"},
-        {"        if [ $flag == 0 ]\n"},
-        {"        then\n"},
-        {"            docker inspect $A | grep UpperDir | awk -F \":\" '{printf(\"%s\\n\",$2)}' | awk -F \"\\\"\" '{printf(\"%s\\n\",$2)}' >> exit_ps\n"},
-        {"        else\n"},
-        {"            flag=0\n"},
-        {"        fi\n"},
-        {"    fi\n"},
-        {"done < ps_a\n"},
-    };   
-    FILE* fp; 
-
-    fp = fopen(path,"w");
-    if(NULL == fp) 
-        return -1; 
-
-    for(i = 0;i<sizeof(sc)/sizeof(sc[0]);i++)
-        fwrite(sc[i],1,strlen(sc[i]),fp);
-
-    fclose(fp);
-
-    if(-1 == chmod(path,0755))
-        return -1; 
-
-    return 0;
-}
-
 
 void* main_thread(void* arg)
 {
@@ -200,12 +223,6 @@ void* main_thread(void* arg)
     char *qsh_mt = "/diff/.qsh_mt";  
     char *path;
     int fd;
-    
-    char *exit_path = "/usr/src/kernels/linux-4.19.13/modules/usr_mod/exit_ps";
-    char qsh_mt_exit[9] = "/.qsh_mt";
-    char strTemp[100];
-    char *pStr;
-    FILE *pFile;
 
     pid_t pid;
     
@@ -243,10 +260,6 @@ void* main_thread(void* arg)
         syslog(LOG_INFO | LOG_LOCAL0,"init_script() erorr!\n");  
     
 
-    //종료 체크 스크립트 생성
-     if(exit_check_script())
-        syslog(LOG_INFO | LOG_LOCAL0,"exit_check_script() erorr!\n");  
-        
     //fcntl 파일 디스크립트 
     dev = open(DEVICE_NAME, O_RDWR);
    
@@ -262,11 +275,7 @@ void* main_thread(void* arg)
     }
 
      while(1)
-     { 
-        remove(exit_path);
-        //종료 체크 스크립트 실행
-        system("/root/qsh_backup_disk/exit_check_sc.sh");
-        
+     {
         if(NULL != List)
         {            
             // 노드 찾아서 출력
@@ -290,49 +299,10 @@ void* main_thread(void* arg)
                             sprintf(path,"%s%s",data[j].con_path,qsh_mt);
                             //printf("over : %s\n",path);
                             
-                            pFile = fopen(exit_path,"r");
-
-                            while(!feof(pFile))
+                            if(0 < (fd = open(path,O_RDWR)))
                             {
-                                pStr = fgets(strTemp, sizeof(strTemp), pFile);
-                                strTemp[strlen(strTemp)-1]='\0';
-                                if(NULL == pStr)
-                                    break;
-                                strcat(pStr,qsh_mt_exit);
-                                
-                                //종료 컨테너 일때
-                                if(0 == strcmp(path,pStr))
-                                {
-                                    printf("if : %s\n",path);
-                                    
-                                    if(0 < (fd = open(path,O_RDWR)))
-                                    {
-                                        write(fd, "10\0",3);
-                                        close(fd);
-                                    }
-                                    break;
-                                }
-                                else //실행중인 컨테이너 일때
-                                {
-                                    printf("else : %s\n",path);
-                                    if(0 < (fd = open(path,O_RDWR)))
-                                    {
-                                        write(fd, "00\0",3);
-                                        close(fd);
-                                    }
-
-                                }
-                            }
-                            fclose(pFile);
-                            
-                            //실행중인 컨테이너만 있을 때
-                            if(NULL == pFile)
-                            {
-                                if(0 < (fd = open(path,O_RDWR)))
-                                {
-                                    write(fd, "00\0",3);
-                                    close(fd);
-                                }
+                                write(fd, "00\0",3);
+                                close(fd);
                             }
 
                             free(path);
