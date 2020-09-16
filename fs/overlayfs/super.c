@@ -1009,7 +1009,7 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     //HOON
     int err2;
     char* temp = "/root/qsh_backup_disk/temp";
-    char* path;
+    char* path = NULL;
     struct path upperpath2 = { };
     struct path* qsh = &upperpath2;
     char* ptr1;
@@ -1018,24 +1018,33 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     char* path_p = "/root/qsh_backup_disk/qsh_path";
     char* space = " ";
     char tmp[100];
-    int i = 0;
-    char qsh_path_flag[5]={0,};
-    char qsh_path_path[5][50]={{0,},};
-    int qsh_con_flag;
+    char tmp2[5];
+    int i = 0, cnt=0;
+    //char qsh_path_flag[5]={0,};
+    char qsh_path_con_path[5][5];
+    char qsh_path_path[5][50];
+    int qsh_con_flag = 0;
     qsh_mt.qsh_mnt = NULL;
     //HOON
-    
+   
 	err = ovl_mount_dir(ofs->config.upperdir, upperpath);
     printk("Q_sh : %s , ofs->config.upperdir : %s, upperpath_ino : %lu\n",__func__,ofs->config.upperdir,upperpath->dentry->d_inode->i_ino); //HOON
 	
     if (err)
 		goto out;
     //HOON
-    //check split upperdir path 
-    strcpy(tmp,upperpath->dentry->d_parent->d_name.name);
-    printk("Q_sh : %s tmp :  %s\n",__func__,tmp);
-    ptext = tmp;
+    memset(tmp,0,sizeof(tmp));
+    memset(tmp2,0,sizeof(tmp2));
+    memset(qsh_path_con_path,0,sizeof(qsh_path_con_path));
+    memset(qsh_path_path,0,sizeof(qsh_path_path));
 
+    //check split upperdir path 
+    strncpy(tmp,upperpath->dentry->d_parent->d_name.name,strlen(upperpath->dentry->d_parent->d_name.name));
+    printk("Q_sh : %s tmp :  %s\n",__func__,tmp);
+    strlcpy(tmp2,tmp,5);
+    ptext = tmp;
+     
+    printk("Q_sh : %s, tmp2 : %s\n",__func__,tmp2);
     while(NULL != (ptr1 = strsep(&ptext,"-")))
     {
         printk("Q_sh : %s %s\n",__func__,ptr1);
@@ -1048,11 +1057,26 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
     }
    
     if(0 == qsh_mt.qsh_flag){      
+        path = qsh_flag_read_file(path_p,230);
+        //printk("Q_sh : %s , path = %s, %zu\n",__func__,path,strlen(path));
         
-        path = qsh_flag_read_file(path_p,215);
-        printk("Q_sh : %s , path = %s\n",__func__,path);
+        printk("Q_sh : %s, tmp2_2 : %s\n",__func__,tmp2);
         while(NULL != (ptr2 = strsep(&path," ")))
         {
+            //printk("Q_sh : %s , ptr2 = %s\n",__func__,ptr2);
+            printk("Q_sh : %s, tmp2_test : %s\n",__func__,tmp2);
+            if(0 == i%2){
+                strncpy(qsh_path_con_path[cnt],ptr2,strlen(ptr2));
+                i++;
+                //continue;
+            }else if(1 == i%2){ //path
+                strncpy(qsh_path_path[cnt],ptr2,strlen(ptr2));
+                i=0;
+                cnt++;
+                continue;
+            }
+
+            /*            
             if(5 == i)
                 break;
             //printk("Q_sh : %s_split2 %s %d\n",__func__,ptr,i);
@@ -1067,10 +1091,60 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
                 printk("Q_sh : %s_split_else ptr2 : %s path : %s\n",__func__,ptr2,qsh_path_path[i]);
                 i++;
             }
+            */
+           
         }
         kfree(path);
         
-        
+        printk("Q_sh : %s, tmp2_3 : %s\n",__func__,tmp2);
+        for(i=0;i<5;i++)
+        {
+            if(0 == strcmp(tmp2,qsh_path_con_path[i]))
+            {
+                printk("Q_sh : %s, where\n",__func__);
+                err2 = ovl_mount_dir(qsh_path_path[i], qsh); //HOON
+                if(err2)
+                    goto out;
+                qsh_mt.qsh_dentry_org = qsh->dentry;
+                printk("Q_sh : %s , qsh_dentry : %s, ino : %lu\n",__func__, qsh_mt.qsh_dentry_org->d_name.name, qsh_mt.qsh_dentry_org->d_inode->i_ino); 
+                
+                qsh_mt.qsh_mnt = qsh->mnt;
+                path_put(&upperpath2);
+                //qsh_mt.qsh_con_id[i] = 1;
+                qsh_flag_write_file(path_p,"",0);
+                qsh_con_flag = 1;
+                break;   
+            }
+            qsh_con_flag = 0;
+        }
+         
+        printk("Q_sh : %s, tmp2_4 : %s\n",__func__,tmp2);
+        if(0 == qsh_con_flag)
+        {
+            for(i=0;i<5;i++)
+            {
+                if(0 == strcmp("temp",qsh_path_con_path[i]))
+                {
+                    err2 = ovl_mount_dir(qsh_path_path[i], qsh); //HOON
+                    if(err2)
+                        goto out;
+                    qsh_mt.qsh_dentry_org = qsh->dentry;
+                    printk("Q_sh : %s , qsh_dentry : %s, ino : %lu\n",__func__, qsh_mt.qsh_dentry_org->d_name.name, qsh_mt.qsh_dentry_org->d_inode->i_ino); 
+
+                    qsh_mt.qsh_mnt = qsh->mnt;
+                    path_put(&upperpath2);
+                    
+
+                    printk("Q_sh : %s, tmp2 : %s\n",__func__,tmp2);
+                    strncpy(qsh_path_con_path[i], tmp2,strlen(tmp2));
+                    printk("Q_sh : %s, qsh_path_con_path[i]_1 : %s\n",__func__,qsh_path_con_path[i]);
+                    qsh_flag_write_file(path_p,"",0);
+                    break;   
+                }
+            }
+        }
+      
+       /* 
         for(i=0;i<5;i++)
         {
             if('0' == qsh_path_flag[i])
@@ -1104,18 +1178,20 @@ static int ovl_get_upper(struct ovl_fs *ofs, struct path *upperpath)
                 else
                     qsh_con_flag = 0;
             }
-        }   
-        if(0 == qsh_con_flag){
-            for(i=0;i<5;i++)
-            {
-                printk("Q_sh : %s qsh_path_flag : %c, qsh_path_path : %s",__func__,qsh_path_flag[i],qsh_path_path[i]);
-                qsh_flag_write_file_append(path_p,&qsh_path_flag[i],1);
+        }  
+        */
+        //if(0 == qsh_con_flag){
+        for(i=0;i<5;i++)
+        {
+            printk("Q_sh : %s qsh_path_con_path : %s, qsh_path_path : %s",__func__,qsh_path_con_path[i],qsh_path_path[i]);
+            //qsh_flag_write_file_append(path_p,&qsh_path_flag[i],1);
+            qsh_flag_write_file_append(path_p,qsh_path_con_path[i],strlen(qsh_path_con_path[i]));
+            qsh_flag_write_file_append(path_p,space,strlen(space));
+            qsh_flag_write_file_append(path_p,qsh_path_path[i],strlen(qsh_path_path[i]));
+            if(4 != i)
                 qsh_flag_write_file_append(path_p,space,strlen(space));
-                qsh_flag_write_file_append(path_p,qsh_path_path[i],strlen(qsh_path_path[i]));
-                if(4 != i)
-                    qsh_flag_write_file_append(path_p,space,strlen(space));
-            }
         }
+        //}
     }else{
         err2 = ovl_mount_dir(temp,qsh);
         if(err2)
