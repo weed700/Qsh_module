@@ -36,11 +36,13 @@ typedef struct q_data{
     char con_path[90];
 }q_data_t;
 
+/*
 //pid를 통해 종료 플래그 변경
 typedef struct q_pid_conpath{
     int pid;
     char path[120];
-}q_pid_path
+}q_pid_path;
+*/
 
 //linkedlist struct
 typedef struct tagNode{
