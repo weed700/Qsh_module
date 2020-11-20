@@ -290,7 +290,7 @@ void* main_thread(void* arg)
 //                printf("--- ProjID    block_count    UsedDisk(KB)    Con_total_size(MB) ---\n");
                 printf("     %u        %llu         %llu, %.f%%                   %llu\n",d.d_id, d.d_bcount, (d.d_bcount*512)/1024,(float)(d.d_bcount*512)/(d.d_blk_hardlimit*512)*100, ((d.d_blk_hardlimit*512)/1024)/1024);
 
-                if(5 < (float)(d.d_bcount*512)/(d.d_blk_hardlimit*512)*100){
+                if(85 < (float)(d.d_bcount*512)/(d.d_blk_hardlimit*512)*100){
                     for(j=0;j<MAX_CON;j++)
                     {
                         if(data[j].id == d.d_id)
@@ -309,6 +309,26 @@ void* main_thread(void* arg)
                             break;
                         }
                     }
+                }else{
+                    for(j=0;j<MAX_CON;j++)
+                    {
+                        if(data[j].id == d.d_id)
+                        {
+                            path = calloc(strlen(data[j].con_path)+strlen(qsh_mt),sizeof(char));
+                            sprintf(path,"%s%s",data[j].con_path,qsh_mt);
+                            //printf("over : %s\n",path);
+
+                            if(0 < (fd = open(path,O_RDWR)))
+                            {
+                                write(fd, "10\0",3);
+                                close(fd);
+                            }
+
+                            free(path);
+                            break;
+                        }
+                    }
+
                 }
             }
         }
