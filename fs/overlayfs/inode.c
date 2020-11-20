@@ -23,7 +23,6 @@ int ovl_setattr(struct dentry *dentry, struct iattr *attr)
 	struct dentry *upperdentry;
 	const struct cred *old_cred;
 
-    //printk("Q_sh : %s , %s_%lu\n",__func__,dentry->d_name.name,dentry->d_inode->i_ino); //HOON
 	err = setattr_prepare(dentry, attr);
 	if (err)
 		return err;
@@ -155,15 +154,11 @@ int ovl_getattr(const struct path *path, struct kstat *stat,
 	int err;
 	bool metacopy_blocks = false;
 
-    printk("Q_sh : %s_1 dentry : %s, inode : %lu\n",__func__,dentry->d_name.name, dentry->d_inode->i_ino); //HOON
-    
-    metacopy_blocks = ovl_is_metacopy_dentry(dentry);
+	metacopy_blocks = ovl_is_metacopy_dentry(dentry);
 
 	type = ovl_path_real(dentry, &realpath);
 	old_cred = ovl_override_creds(dentry->d_sb);
-    //printk("Q_sh : %s_2 start dentry : %s, inode : %lu\n",__func__,realpath.dentry->d_name.name, realpath.dentry->d_inode->i_ino); //HOON
 	err = vfs_getattr(&realpath, stat, request_mask, flags);
-    printk("Q_sh : %s_3 end \n",__func__); //HOON
 	if (err)
 		goto out;
 
@@ -570,10 +565,8 @@ static void ovl_fill_inode(struct inode *inode, umode_t mode, dev_t rdev,
 		inode->i_ino = ino;
 		if (xinobits && fsid && !(ino >> (64 - xinobits)))
 			inode->i_ino |= (unsigned long)fsid << (64 - xinobits);
-        printk("Q_sh : %s if i_ino : %lu \n",__func__,inode->i_ino); //HOON
 	} else {
 		inode->i_ino = get_next_ino();
-        printk("Q_sh : %s else i_ino : %lu \n",__func__,inode->i_ino); //HOON
 	}
 	inode->i_mode = mode;
 	inode->i_flags |= S_NOCMTIME;
@@ -840,9 +833,8 @@ struct inode *ovl_get_inode(struct super_block *sb,
 	bool is_dir, metacopy = false;
 	unsigned long ino = 0;
 	int err = -ENOMEM;
-    
-
-	if (!realinode)
+	
+    if (!realinode)
 		realinode = d_inode(lowerdentry);
 
 	/*
@@ -889,7 +881,8 @@ struct inode *ovl_get_inode(struct super_block *sb,
 		}
 	}
 	ovl_fill_inode(inode, realinode->i_mode, realinode->i_rdev, ino, fsid);
-	ovl_inode_init(inode, upperdentry, lowerdentry, oip->lowerdata);
+    ovl_inode_init(inode, upperdentry, lowerdentry, oip->lowerdata);
+
 
 	if (upperdentry && ovl_is_impuredir(upperdentry))
 		ovl_set_flag(OVL_IMPURE, inode);
@@ -898,9 +891,9 @@ struct inode *ovl_get_inode(struct super_block *sb,
 		ovl_set_flag(OVL_INDEX, inode);
 
 	if (upperdentry) {
-        err = ovl_check_metacopy_xattr(upperdentry);
-        if (err < 0)
-            goto out_err;
+		err = ovl_check_metacopy_xattr(upperdentry);
+		if (err < 0)
+			goto out_err;
 		metacopy = err;
 		if (!metacopy)
 			ovl_set_flag(OVL_UPPERDATA, inode);

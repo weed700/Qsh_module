@@ -106,37 +106,20 @@ struct ovl_inode {
 };
 
 //HOON
-/*
-struct qsh_path_t{
-    char flag;
-    char path[50];
-};
-*/
 struct qsh_metadata{
     int qsh_flag;
     struct dentry* qsh_tmp;
     struct dentry* qsh_dentry_org;
-    //unsigned int qsh_lowernum;
-	struct vfsmount *qsh_mnt;
+    struct vfsmount* qsh_mnt;
     int qsh_con_id[5];
-    //struct qsh_path_t qsh_path[5];
-    //struct path* qsh_path; 
-    //struct inode qsh_vfs_inode;
-    //struct file* qsh_file;
 };
-
-/*
-static inline struct qsh_metadata *QSH_I(struct inode *inode)
-{
-	return container_of(inode, struct qsh_metadata, qsh_vfs_inode);
-}
-*/
 
 static inline struct dentry *qsh_dentry_dereference(struct ovl_inode *oi)
 {
 	return READ_ONCE(oi->qsh_dentry);
 }
 //HOON
+
 
 static inline struct ovl_inode *OVL_I(struct inode *inode)
 {

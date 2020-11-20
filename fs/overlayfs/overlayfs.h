@@ -12,8 +12,6 @@
 #include <linux/fs.h>
 #include "ovl_entry.h"
 
-#include <linux/syscalls.h> //HOON
-
 enum ovl_path_type {
 	__OVL_PATH_UPPER	= (1 << 0),
 	__OVL_PATH_MERGE	= (1 << 1),
@@ -427,3 +425,4 @@ char* qsh_flag_read_file(char *filename, int buf_size);
 int qsh_flag_write_file(char *filename, char *data, int size);
 int qsh_flag_write_file_append(char *filename, char *data, int size);
 //HOON
+

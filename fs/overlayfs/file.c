@@ -29,16 +29,10 @@ static struct file *ovl_open_realfile(const struct file *file,
 	struct inode *inode = file_inode(file);
 	struct file *realfile;
 	const struct cred *old_cred;
-    //extern struct qsh_metadata qsh_mt; //HOON
 
-    //HOON
-    //if(0 == qsh_mt.qsh_flag)
-    printk("Q_sh : %s, ino : %lu, realino : %lu\n",__func__,inode->i_ino,realinode->i_ino);
-    //HOON
 	old_cred = ovl_override_creds(inode->i_sb);
 	realfile = open_with_fake_path(&file->f_path, file->f_flags | O_NOATIME,
 				       realinode, current_cred());
-    printk("Q_sh : %s, realfile : %s_%lu\n",__func__,realfile->f_path.dentry->d_name.name,realfile->f_path.dentry->d_inode->i_ino);
 	revert_creds(old_cred);
 
 	pr_debug("open(%p[%pD2/%c], 0%o) -> (%p, 0%o)\n",
@@ -91,26 +85,21 @@ static int ovl_real_fdget_meta(const struct file *file, struct fd *real,
 {
 	struct inode *inode = file_inode(file);
 	struct inode *realinode;
-    struct dentry* qsh_dentry; //HOON
-
+    struct dentry *qsh_dentry; //HOON
+    
 	real->flags = 0;
 	real->file = file->private_data;
-    
-    //HOON
-    //if(0 == strcmp(real->file->f_path.dentry->d_name.name,"qsh.a"))
-    //    printk("Q_sh : %s i_no : %lu\n",__func__,real->file->f_inode->i_ino);
-    //HOON
-    
+
 	if (allow_meta)
 		realinode = ovl_inode_real(inode);
 	else
 		realinode = ovl_inode_realdata(inode);
 
     //HOON
-    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))) {
+    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))){
+        printk("Q_sh : %s \n",__func__); 
         qsh_dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
         realinode = qsh_dentry->d_inode;
-        printk("Q_sh : %s i_no : %lu\n",__func__,realinode->i_ino);
     }
     //HOON
 
@@ -138,9 +127,8 @@ static int ovl_open(struct inode *inode, struct file *file)
 {
 	struct dentry *dentry = file_dentry(file);
 	struct file *realfile;
-	int err; 
-    //extern struct qsh_metadata qsh_mt; //HOON
-    struct dentry* qsh_dentry; //HOON 
+	int err;
+    struct dentry* qsh_dentry; //HOON
 
 	err = ovl_open_maybe_copy_up(dentry, file->f_flags);
 	if (err)
@@ -149,15 +137,15 @@ static int ovl_open(struct inode *inode, struct file *file)
 	/* No longer need these flags, so don't pass them on to underlying fs */
 	file->f_flags &= ~(O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC);
 
-	realfile = ovl_open_realfile(file, ovl_inode_realdata(inode));
+	//realfile = ovl_open_realfile(file, ovl_inode_realdata(inode));
     //HOON
-    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))) {
+    if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))){
+        printk("Q_sh : %s qsh dentry\n",__func__);
         qsh_dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
         realfile = ovl_open_realfile(file, qsh_dentry->d_inode);
-        printk("Q_sh : %s_qsh ,%s_%lu\n",__func__,realfile->f_path.dentry->d_name.name,realfile->f_path.dentry->d_inode->i_ino);
     }else{
-	    realfile = ovl_open_realfile(file, ovl_inode_realdata(inode));
-        printk("Q_sh : %s ,%s_%lu\n",__func__,realfile->f_path.dentry->d_name.name,realfile->f_path.dentry->d_inode->i_ino);
+        printk("Q_sh : %s upper dentry\n",__func__);
+        realfile = ovl_open_realfile(file, ovl_inode_realdata(inode));
     }
     //HOON
 	if (IS_ERR(realfile))
@@ -188,8 +176,7 @@ static void ovl_file_accessed(struct file *file)
 {
 	struct inode *inode, *upperinode;
 
-	
-    if (file->f_flags & O_NOATIME)
+	if (file->f_flags & O_NOATIME)
 		return;
 
 	inode = file_inode(file);
@@ -231,12 +218,10 @@ static ssize_t ovl_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 	const struct cred *old_cred;
 	ssize_t ret;
 
-    printk("Q_sh : %s %s_%lu\n",__func__,file->f_path.dentry->d_name.name,file->f_path.dentry->d_inode->i_ino); //HOON
 	if (!iov_iter_count(iter))
 		return 0;
 
 	ret = ovl_real_fdget(file, &real);
-    printk("Q_sh : %s real %s_%lu\n",__func__,real.file->f_path.dentry->d_name.name,real.file->f_path.dentry->d_inode->i_ino); //HOON
 	if (ret)
 		return ret;
 
@@ -259,11 +244,6 @@ static ssize_t ovl_write_iter(struct kiocb *iocb, struct iov_iter *iter)
 	struct fd real;
 	const struct cred *old_cred;
 	ssize_t ret;
-
-    //HOON
-    //if(0 == strcmp(file->f_path.dentry->d_name.name,"qsh.a"))
-    printk("Q_sh : %s , %s_%lu\n",__func__,file->f_path.dentry->d_name.name,inode->i_ino);
-    //HOON
 
 	if (!iov_iter_count(iter))
 		return 0;
@@ -303,7 +283,6 @@ static int ovl_fsync(struct file *file, loff_t start, loff_t end, int datasync)
 	const struct cred *old_cred;
 	int ret;
 
-    printk("Q_sh : %s\n",__func__);//HOON
 	ret = ovl_real_fdget_meta(file, &real, !datasync);
 	if (ret)
 		return ret;
@@ -326,7 +305,6 @@ static int ovl_mmap(struct file *file, struct vm_area_struct *vma)
 	const struct cred *old_cred;
 	int ret;
 
-    printk("Q_sh : %s \n",__func__); //HOON
 	if (!realfile->f_op->mmap)
 		return -ENODEV;
 
@@ -418,7 +396,7 @@ static long ovl_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	long ret;
 	struct inode *inode = file_inode(file);
-    
+
 	switch (cmd) {
 	case FS_IOC_GETFLAGS:
 		ret = ovl_real_ioctl(file, cmd, arg);
@@ -561,7 +539,6 @@ char* qsh_flag_read_file(char *filename, int buf_size)
     loff_t pos = 0;
     int err = 0;
 
-    printk("Q_sh : %s start\n",__func__);
     filp = filp_open(filename, O_RDONLY,0);
 
     if(IS_ERR(filp)){
@@ -574,7 +551,6 @@ char* qsh_flag_read_file(char *filename, int buf_size)
 
     kernel_read(filp, buf, buf_size, &pos);
     filp_close(filp,NULL);
-    printk("Q_sh : %s end\n",__func__);
 
     return buf;
 }
@@ -585,7 +561,6 @@ int qsh_flag_write_file(char *filename, char *data, int size)
     loff_t pos = 0;
     int err = 0;
 
-    printk("Q_sh : %s start\n",__func__);
     filp = filp_open(filename, O_CREAT|O_WRONLY|O_TRUNC,0644);
 
     if(IS_ERR(filp)){
@@ -596,7 +571,6 @@ int qsh_flag_write_file(char *filename, char *data, int size)
 
     kernel_write(filp,data,size,&pos);
     filp_close(filp,NULL);
-    printk("Q_sh : %s end\n",__func__);
 
     return 0;
 }
@@ -607,7 +581,6 @@ int qsh_flag_write_file_append(char *filename, char *data, int size)
     loff_t pos = 0;
     int err = 0;
 
-    printk("Q_sh : %s start\n",__func__);
     filp = filp_open(filename, O_CREAT|O_WRONLY|O_APPEND,0644);
 
     if(IS_ERR(filp)){
@@ -618,11 +591,12 @@ int qsh_flag_write_file_append(char *filename, char *data, int size)
 
     kernel_write(filp,data,size,&pos);
     filp_close(filp,NULL);
-    printk("Q_sh : %s end\n",__func__);
 
     return 0;
 }
 //HOON
+
+
 
 const struct file_operations ovl_file_operations = {
 	.open		= ovl_open,
@@ -636,8 +610,8 @@ const struct file_operations ovl_file_operations = {
 	.fadvise	= ovl_fadvise,
 	.unlocked_ioctl	= ovl_ioctl,
 	.compat_ioctl	= ovl_compat_ioctl,
+
 	.copy_file_range	= ovl_copy_file_range,
 	.clone_file_range	= ovl_clone_file_range,
 	.dedupe_file_range	= ovl_dedupe_file_range,
 };
-
