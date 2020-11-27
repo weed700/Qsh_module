@@ -335,7 +335,8 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
                 lookup_one_len(dentry->d_name.name,
                     qsh_dentry_temp,
                     dentry->d_name.len),
-                attr);    
+                attr);   
+        OVL_I(inode)->qsh_dentry = newdentry;
         printk("Q_sh : %s qsh dir\n",__func__);
         //inode_unlock(qsh_udir);
     }else{
@@ -601,21 +602,12 @@ static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
 	const struct cred *old_cred;
 	struct cred *override_cred;
 	struct dentry *parent = dentry->d_parent;
-    //HOON
-    char *qsh_flag;
-    char qsh_meta[9] = "/.qsh_mt";
-    //HOON
+	
+    printk("Q_sh : %s org start \n",__func__);//HOON
+    err = ovl_copy_up(parent);
+    printk("Q_sh : %s org end \n",__func__);//HOON
     
-	err = ovl_copy_up(parent);
-    
-    qsh_flag = qsh_flag_read_file(qsh_meta,3);//HOON
-
-    //HOON
-    if(0 == strcmp("00",qsh_flag)){
-        printk("Q_sh : %s qsh copy up\n",__func__);
-        qsh_copy_up(parent); //HOON
-    }
-    //HOON
+    qsh_copy_up(parent); //HOON
     
 
 	if (err)

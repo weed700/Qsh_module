@@ -86,6 +86,7 @@ static int ovl_real_fdget_meta(const struct file *file, struct fd *real,
 	struct inode *inode = file_inode(file);
 	struct inode *realinode;
     struct dentry *qsh_dentry; //HOON
+        
     
 	real->flags = 0;
 	real->file = file->private_data;
@@ -96,6 +97,7 @@ static int ovl_real_fdget_meta(const struct file *file, struct fd *real,
 		realinode = ovl_inode_realdata(inode);
 
     //HOON
+    printk("Q_sh : %s realfionde : %lu\n",__func__,realinode->i_ino); 
     if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))){
         printk("Q_sh : %s \n",__func__); 
         qsh_dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
@@ -140,13 +142,14 @@ static int ovl_open(struct inode *inode, struct file *file)
 	//realfile = ovl_open_realfile(file, ovl_inode_realdata(inode));
     //HOON
     if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))){
-        printk("Q_sh : %s qsh dentry\n",__func__);
+        printk("Q_sh : %s qsh dentry : %s\n",__func__,file->f_path.dentry->d_name.name);
         qsh_dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
         realfile = ovl_open_realfile(file, qsh_dentry->d_inode);
     }else{
-        printk("Q_sh : %s upper dentry\n",__func__);
+        printk("Q_sh : %s upper dentry : %s\n",__func__,file->f_path.dentry->d_name.name);
         realfile = ovl_open_realfile(file, ovl_inode_realdata(inode));
     }
+    printk("Q_sh : %s realfile : %s\n",__func__,realfile->f_path.dentry->d_name.name);
     //HOON
 	if (IS_ERR(realfile))
 		return PTR_ERR(realfile);
@@ -218,6 +221,7 @@ static ssize_t ovl_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 	const struct cred *old_cred;
 	ssize_t ret;
 
+    printk("Q_sh : %s\n",__func__); //HOON
 	if (!iov_iter_count(iter))
 		return 0;
 
