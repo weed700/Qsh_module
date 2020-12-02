@@ -154,7 +154,7 @@ int ovl_getattr(const struct path *path, struct kstat *stat,
 	int err;
 	bool metacopy_blocks = false;
 
-    printk("Q_sh : %s\n",__func__); //HOON
+    //printk("Q_sh : %s\n",__func__); //HOON
 	metacopy_blocks = ovl_is_metacopy_dentry(dentry);
 
 	type = ovl_path_real(dentry, &realpath);

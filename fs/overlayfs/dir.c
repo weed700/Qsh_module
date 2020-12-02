@@ -374,6 +374,7 @@ out_unlock:
         inode_unlock(qsh_udir);
     else
 	    inode_unlock(udir);
+    kfree(qsh_flag); //HOON
     //HOON
 	return err;
 
@@ -385,7 +386,6 @@ out_cleanup:
 	    ovl_cleanup(udir, newdentry);
     //HOON
 	dput(newdentry);
-    kfree(qsh_flag); //HOON
 	goto out_unlock;
 }
 

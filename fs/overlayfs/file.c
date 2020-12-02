@@ -97,9 +97,9 @@ static int ovl_real_fdget_meta(const struct file *file, struct fd *real,
 		realinode = ovl_inode_realdata(inode);
 
     //HOON
-    printk("Q_sh : %s realfionde : %lu\n",__func__,realinode->i_ino); 
+    //printk("Q_sh : %s realfionde : %lu\n",__func__,realinode->i_ino); 
     if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))){
-        printk("Q_sh : %s \n",__func__); 
+        //printk("Q_sh : %s \n",__func__); 
         qsh_dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
         realinode = qsh_dentry->d_inode;
     }
@@ -221,7 +221,7 @@ static ssize_t ovl_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 	const struct cred *old_cred;
 	ssize_t ret;
 
-    printk("Q_sh : %s\n",__func__); //HOON
+    //printk("Q_sh : %s\n",__func__); //HOON
 	if (!iov_iter_count(iter))
 		return 0;
 

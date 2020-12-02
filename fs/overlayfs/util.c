@@ -125,7 +125,7 @@ enum ovl_path_type ovl_path_type(struct dentry *dentry)
 {
 	struct ovl_entry *oe = dentry->d_fsdata;
 	enum ovl_path_type type = 0;
-    printk("Q_sh : %s type start : %d\n",__func__,type); //HOON
+    //printk("Q_sh : %s type start : %d\n",__func__,type); //HOON
 
 	if (ovl_dentry_upper(dentry)) {
 		type = __OVL_PATH_UPPER;
@@ -144,14 +144,14 @@ enum ovl_path_type ovl_path_type(struct dentry *dentry)
 		if (oe->numlower > 1)
 			type |= __OVL_PATH_MERGE;
 	}
-    printk("Q_sh : %s type end : %d\n",__func__,type); //HOON
+    //printk("Q_sh : %s type end : %d\n",__func__,type); //HOON
 	return type;
 }
 
 void ovl_path_upper(struct dentry *dentry, struct path *path)
 {
 	struct ovl_fs *ofs = dentry->d_sb->s_fs_info;
-    printk("Q_sh : %s\n",__func__);
+    //printk("Q_sh : %s\n",__func__);
 	path->mnt = ofs->upper_mnt;
 	path->dentry = ovl_dentry_upper(dentry);
 }
@@ -183,13 +183,13 @@ void ovl_path_lowerdata(struct dentry *dentry, struct path *path)
 enum ovl_path_type ovl_path_real(struct dentry *dentry, struct path *path)
 {
 	enum ovl_path_type type = ovl_path_type(dentry);
-    printk("Q_sh : %s type start : %d\n",__func__,type); //HOON
+    //printk("Q_sh : %s type start : %d\n",__func__,type); //HOON
 
 	if (!OVL_TYPE_UPPER(type))
 		ovl_path_lower(dentry, path);
 	else
 		ovl_path_upper(dentry, path);
-    printk("Q_sh : %s type end : %d\n",__func__,type); //HOON
+    //printk("Q_sh : %s type end : %d\n",__func__,type); //HOON
 
 	return type;
 }
@@ -269,10 +269,12 @@ struct inode *ovl_inode_realdata(struct inode *inode)
 
 	upperinode = ovl_inode_upper(inode);
     //HOON
+    /*
     if(upperinode)
         printk("Q_sh : %s upperdinode : %lu\n",__func__,upperinode->i_ino);
     else
         printk("Q_sh : %s \n",__func__);
+    */
     //HOON
 	if (upperinode && ovl_has_upperdata(inode))
 		return upperinode;
