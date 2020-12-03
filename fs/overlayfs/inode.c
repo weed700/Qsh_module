@@ -154,7 +154,6 @@ int ovl_getattr(const struct path *path, struct kstat *stat,
 	int err;
 	bool metacopy_blocks = false;
 
-    //printk("Q_sh : %s\n",__func__); //HOON
 	metacopy_blocks = ovl_is_metacopy_dentry(dentry);
 
 	type = ovl_path_real(dentry, &realpath);
@@ -834,8 +833,8 @@ struct inode *ovl_get_inode(struct super_block *sb,
 	bool is_dir, metacopy = false;
 	unsigned long ino = 0;
 	int err = -ENOMEM;
-	
-    if (!realinode)
+
+	if (!realinode)
 		realinode = d_inode(lowerdentry);
 
 	/*
@@ -882,8 +881,11 @@ struct inode *ovl_get_inode(struct super_block *sb,
 		}
 	}
 	ovl_fill_inode(inode, realinode->i_mode, realinode->i_rdev, ino, fsid);
-    ovl_inode_init(inode, upperdentry, lowerdentry, oip->lowerdata);
-
+	ovl_inode_init(inode, upperdentry, lowerdentry, oip->lowerdata);
+    //HOON
+    if(oip->qsh_upperdentry)
+        OVL_I(inode)->qsh_dentry = oip->qsh_upperdentry;
+    //HOON
 
 	if (upperdentry && ovl_is_impuredir(upperdentry))
 		ovl_set_flag(OVL_IMPURE, inode);

@@ -44,7 +44,8 @@ struct ovl_path {
 /* private information held for overlayfs's superblock */
 struct ovl_fs {
 	struct vfsmount *upper_mnt;
-	unsigned int numlower;
+	struct vfsmount *qsh_mnt; //HOON
+    unsigned int numlower;
 	/* Number of unique lower sb that differ from upper sb */
 	unsigned int numlowerfs;
 	struct ovl_layer *lower_layers;
@@ -106,17 +107,9 @@ struct ovl_inode {
 };
 
 //HOON
-struct qsh_metadata{
-    int qsh_flag;
-    struct dentry* qsh_tmp;
-    struct dentry* qsh_dentry_org;
-    struct vfsmount* qsh_mnt;
-    int qsh_con_id[5];
-};
-
 static inline struct dentry *qsh_dentry_dereference(struct ovl_inode *oi)
 {
-	return READ_ONCE(oi->qsh_dentry);
+        return READ_ONCE(oi->qsh_dentry);
 }
 //HOON
 

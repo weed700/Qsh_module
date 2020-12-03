@@ -445,24 +445,23 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
 {
 	int err;
 	struct dentry *upper;
-	struct inode *udir = d_inode(c->destdir);
+    struct inode *udir = d_inode(c->destdir);
     //HOON
     struct dentry *qsh_destdir;
     struct dentry *qsh_upper;
     struct inode *qsh_udir;
     struct dentry *d;
     //HOON
-    
 	upper = lookup_one_len(c->destname.name, c->destdir, c->destname.len);
 	if (IS_ERR(upper))
 		return PTR_ERR(upper);
 
 	if (c->tmpfile)
 		err = ovl_do_link(temp, udir, upper);
-	else{
-        err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0);
+    else{
+        err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0); //org
         //HOON(qsh dentry mkdir)
-        printk("Q_sh : %s qsh dentry mkdir\n",__func__);
+        //printk("Q_sh : %s qsh dentry mkdir\n",__func__);
         qsh_destdir = qsh_dentry_dereference(OVL_I(d_inode(c->parent)));
         qsh_udir = d_inode(qsh_destdir);
         inode_lock_nested(qsh_udir, I_MUTEX_PARENT);
@@ -475,7 +474,6 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
         inode_unlock(qsh_udir);
         //HOON
     }
-
 	if (!err)
 		*newdentry = dget(c->tmpfile ? upper : temp);
 	dput(upper);
@@ -810,6 +808,7 @@ static int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 
 	return err;
 }
+
 //HOON
 void qsh_copy_up(struct dentry *dentry)
 {
@@ -820,7 +819,7 @@ void qsh_copy_up(struct dentry *dentry)
     struct inode *qsh_udir;
     struct dentry *d;
 
-    printk("Q_sh : %s start\n",__func__);
+    //printk("Q_sh : %s start\n",__func__);
     while(!err){
         struct dentry *next;
         struct dentry *parent = NULL;
@@ -838,21 +837,21 @@ void qsh_copy_up(struct dentry *dentry)
             next = parent;
         }
         //mkdir
-        printk("Q_sh : %s 1\n",__func__);
+        //printk("Q_sh : %s 1\n",__func__);
         qsh_destdir = qsh_dentry_dereference(OVL_I(d_inode(parent)));
         qsh_udir = d_inode(qsh_destdir);
         inode_lock_nested(qsh_udir, I_MUTEX_PARENT);
-        printk("Q_sh : %s 2\n",__func__);
+        //printk("Q_sh : %s 2\n",__func__);
         qsh_upper = lookup_one_len(next->d_name.name, qsh_destdir, next->d_name.len);
         vfs_mkdir(qsh_udir,qsh_upper,qsh_udir->i_mode);
         d = lookup_one_len(qsh_upper->d_name.name, qsh_upper->d_parent, qsh_upper->d_name.len);
         OVL_I(d_inode(next))->qsh_dentry = d;
-        printk("Q_sh : %s 3\n",__func__);
+        //printk("Q_sh : %s 3\n",__func__);
         dput(qsh_upper);
         dput(d);
-        printk("Q_sh : %s 4\n",__func__);
+        //printk("Q_sh : %s 4\n",__func__);
         inode_unlock(qsh_udir);
-        printk("Q_sh : %s 5\n",__func__);
+        //printk("Q_sh : %s 5\n",__func__);
 
         if(next->d_inode->i_ino == dentry->d_inode->i_ino)
             err = 1;
@@ -860,10 +859,11 @@ void qsh_copy_up(struct dentry *dentry)
         dput(parent);
         dput(next);
     }
-    printk("Q_sh : %s end\n",__func__);
+    //printk("Q_sh : %s end\n",__func__);
 }
-
 //HOON
+
+
 int ovl_copy_up_flags(struct dentry *dentry, int flags)
 {
 	int err = 0;

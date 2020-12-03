@@ -827,10 +827,9 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
 		.redirect = NULL,
 		.metacopy = false,
 	};
+
     //HOON
-    extern struct qsh_metadata qsh_mt;
     struct dentry *qsh_pdir, *qsh_upperdentry = NULL;
-    qsh_mt.qsh_tmp = NULL;
     //HOON
 
 	if (dentry->d_name.len > ofs->namelen)
@@ -840,19 +839,19 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
     upperdir = ovl_dentry_upper(dentry->d_parent);
 
     //HOON
-    //printk("Q_sh : %s dir_name : %s\n",__func__,dentry->d_parent->d_name.name); 
-    qsh_pdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
-    if(qsh_pdir){
+    qsh_pdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));                                                                                                                                                                                                      
+    if(qsh_pdir){              
         err = ovl_lookup_layer(qsh_pdir, &d, &qsh_upperdentry);
-        printk("Q_sh : %s qsh dir in\n",__func__); //HOON
-
-        if(qsh_upperdentry){
+        //printk("Q_sh : %s qsh dir in\n",__func__); //HOON                                                                                                                                                                                                                     
+        /*
+        if(qsh_upperdentry){   
             printk("Q_sh : %s qsh upperdentry save\n",__func__); //HOON
-            qsh_mt.qsh_tmp = qsh_upperdentry; 
+            qsh_mt.qsh_tmp = qsh_upperdentry;                                                                                                                                                                                                                                 
         }else{
             printk("Q_sh : %s NULL \n",__func__);
-            qsh_mt.qsh_tmp = NULL;
+            qsh_mt.qsh_tmp = NULL;      
         }
+        */
     }
     //HOON
 
@@ -1086,29 +1085,29 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
 				      stack[ctr - 1].dentry : NULL,
 		};
 
-        //printk("Q_sh : %s if upperdentry\n",__func__); //HOON
 		inode = ovl_get_inode(dentry->d_sb, &oip);
 		err = PTR_ERR(inode);
 		if (IS_ERR(inode))
-			goto out_free_oe;
+            goto out_free_oe;
     }
     //HOON
     else{
         if(qsh_upperdentry){
-            struct ovl_inode_params oip = {
-                .upperdentry = qsh_upperdentry,
-                .lowerpath = stack,
+            struct ovl_inode_params oip = { 
+                .upperdentry = qsh_upperdentry, 
+                .qsh_upperdentry = qsh_upperdentry,
+                .lowerpath = stack,             
                 .index = index,
-                .numlower = ctr,
-                .redirect = upperredirect,
+                .numlower = ctr,                
+                .redirect = upperredirect,      
                 .lowerdata = (ctr > 1 && !d.is_dir) ?
-                    stack[ctr - 1].dentry : NULL,
+                    stack[ctr - 1].dentry : NULL,   
             };
             //printk("Q_sh : %s else qsh_upperdentry\n",__func__); //HOON
             inode = ovl_get_inode(dentry->d_sb, &oip);
-            err = PTR_ERR(inode);
+            err = PTR_ERR(inode);           
             if (IS_ERR(inode))
-                goto out_free_oe;
+                goto out_free_oe;               
         }
     }
     //HOON

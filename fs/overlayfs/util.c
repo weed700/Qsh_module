@@ -125,7 +125,6 @@ enum ovl_path_type ovl_path_type(struct dentry *dentry)
 {
 	struct ovl_entry *oe = dentry->d_fsdata;
 	enum ovl_path_type type = 0;
-    //printk("Q_sh : %s type start : %d\n",__func__,type); //HOON
 
 	if (ovl_dentry_upper(dentry)) {
 		type = __OVL_PATH_UPPER;
@@ -144,14 +143,23 @@ enum ovl_path_type ovl_path_type(struct dentry *dentry)
 		if (oe->numlower > 1)
 			type |= __OVL_PATH_MERGE;
 	}
-    //printk("Q_sh : %s type end : %d\n",__func__,type); //HOON
 	return type;
 }
+
+//HOON
+void qsh_path_upper(struct dentry *dentry, struct path *path)
+{
+    struct ovl_fs *ofs = dentry->d_sb->s_fs_info;
+
+    path->mnt = ofs->qsh_mnt;
+    path->dentry = qsh_dentry_dereference(OVL_I(d_inode(dentry)));
+}
+//HOON
 
 void ovl_path_upper(struct dentry *dentry, struct path *path)
 {
 	struct ovl_fs *ofs = dentry->d_sb->s_fs_info;
-    //printk("Q_sh : %s\n",__func__);
+
 	path->mnt = ofs->upper_mnt;
 	path->dentry = ovl_dentry_upper(dentry);
 }
@@ -183,13 +191,11 @@ void ovl_path_lowerdata(struct dentry *dentry, struct path *path)
 enum ovl_path_type ovl_path_real(struct dentry *dentry, struct path *path)
 {
 	enum ovl_path_type type = ovl_path_type(dentry);
-    //printk("Q_sh : %s type start : %d\n",__func__,type); //HOON
 
 	if (!OVL_TYPE_UPPER(type))
 		ovl_path_lower(dentry, path);
 	else
 		ovl_path_upper(dentry, path);
-    //printk("Q_sh : %s type end : %d\n",__func__,type); //HOON
 
 	return type;
 }
@@ -268,14 +274,6 @@ struct inode *ovl_inode_realdata(struct inode *inode)
 	struct inode *upperinode;
 
 	upperinode = ovl_inode_upper(inode);
-    //HOON
-    /*
-    if(upperinode)
-        printk("Q_sh : %s upperdinode : %lu\n",__func__,upperinode->i_ino);
-    else
-        printk("Q_sh : %s \n",__func__);
-    */
-    //HOON
 	if (upperinode && ovl_has_upperdata(inode))
 		return upperinode;
 
@@ -418,9 +416,6 @@ void ovl_inode_init(struct inode *inode, struct dentry *upperdentry,
 		    struct dentry *lowerdentry, struct dentry *lowerdata)
 {
 	struct inode *realinode = d_inode(upperdentry ?: lowerdentry);
-    //HOON
-    extern struct qsh_metadata qsh_mt; 
-    //HOON
 
 	if (upperdentry)
 		OVL_I(inode)->__upperdentry = upperdentry;
@@ -428,12 +423,9 @@ void ovl_inode_init(struct inode *inode, struct dentry *upperdentry,
 		OVL_I(inode)->lower = igrab(d_inode(lowerdentry));
 	if (lowerdata)
 		OVL_I(inode)->lowerdata = igrab(d_inode(lowerdata));
-    //HOON
-    if(NULL != qsh_mt.qsh_tmp)
-        OVL_I(inode)->qsh_dentry = qsh_mt.qsh_tmp;
-    //HOON
-    ovl_copyattr(realinode, inode);
-    ovl_copyflags(realinode, inode);
+
+	ovl_copyattr(realinode, inode);
+	ovl_copyflags(realinode, inode);
 	if (!inode->i_ino)
 		inode->i_ino = realinode->i_ino;
 }
@@ -477,16 +469,14 @@ void ovl_dir_modified(struct dentry *dentry, bool impurity)
     struct dentry *qsh_temp; //HOON
 	/* Copy mtime/ctime */
 	ovl_copyattr(d_inode(ovl_dentry_upper(dentry)), d_inode(dentry));
-    
+
     //HOON
     if(NULL != qsh_dentry_dereference(OVL_I(d_inode(dentry))) && (0 == strcmp("/", dentry->d_name.name))){
-    //if(NULL != qsh_dentry_dereference(OVL_I(d_inode(dentry)))){
         printk("Q_sh : %s Copy inode(qsh inode -> fake inode)\n",__func__);
         qsh_temp = qsh_dentry_dereference(OVL_I(d_inode(dentry)));
         ovl_copyattr(qsh_temp->d_inode, d_inode(dentry));
     }
     //HOON
-
 
 	ovl_dentry_version_inc(dentry, impurity);
 }

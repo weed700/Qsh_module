@@ -355,6 +355,7 @@ bool ovl_is_private_xattr(const char *name);
 struct ovl_inode_params {
 	struct inode *newinode;
 	struct dentry *upperdentry;
+    struct dentry *qsh_upperdentry; //HOON
 	struct ovl_path *lowerpath;
 	struct dentry *index;
 	unsigned int numlower;
@@ -415,12 +416,14 @@ int ovl_set_attr(struct dentry *upper, struct kstat *stat);
 struct ovl_fh *ovl_encode_real_fh(struct dentry *real, bool is_upper);
 int ovl_set_origin(struct dentry *dentry, struct dentry *lower,
 		   struct dentry *upper);
-void qsh_copy_up(struct dentry *dentry); //HOON
+
 
 /* export.c */
 extern const struct export_operations ovl_export_operations;
 
 //HOON
+void qsh_copy_up(struct dentry *dentry); //HOON
+void qsh_path_upper(struct dentry *dentry, struct path *path);
 char* qsh_flag_read_file(char *filename, int buf_size);
 int qsh_flag_write_file(char *filename, char *data, int size);
 int qsh_flag_write_file_append(char *filename, char *data, int size);
