@@ -945,7 +945,6 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
     char qsh_meta[9] = "/.qsh_mt";
     //HOON
 
-
 	od = kzalloc(sizeof(struct ovl_dir_file), GFP_KERNEL);
 	if (!od)
 		return -ENOMEM;
@@ -982,9 +981,11 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
     else
     {
         printk("Q_sh : %s org dir open : %s\n",__func__,realfile->f_path.dentry->d_name.name); //HOON
+        //org
         od->realfile = realfile;
         od->is_real = ovl_dir_is_real(file->f_path.dentry);
         od->is_upper = OVL_TYPE_UPPER(type);
+        //org
         printk("Q_sh : %s  is_real : %d, is_upper : %d\n",__func__,od->is_real,od->is_upper); //HOON
 
         if(0 == strcmp("00",qsh_flag)){
@@ -1001,9 +1002,6 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 		kfree(od);
 		return PTR_ERR(realfile);
 	}
-	od->realfile = realfile;
-	od->is_real = ovl_dir_is_real(file->f_path.dentry);
-	od->is_upper = OVL_TYPE_UPPER(type);
 	file->private_data = od;
 
 	return 0;

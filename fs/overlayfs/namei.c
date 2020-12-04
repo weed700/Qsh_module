@@ -1077,6 +1077,7 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
 	if (upperdentry || ctr) {
 		struct ovl_inode_params oip = {
 			.upperdentry = upperdentry,
+            .qsh_upperdentry = qsh_upperdentry, //HOON
 			.lowerpath = stack,
 			.index = index,
 			.numlower = ctr,

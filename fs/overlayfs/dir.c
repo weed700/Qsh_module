@@ -834,7 +834,7 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
     //HOON
     struct dentry *qsh_upperdir, *qsh_upper;
     struct inode *qsh_dir;
-    int qsh_flag = 1;
+    int err2;
     //HOON
 
 	if (!list_empty(list)) {
@@ -846,20 +846,19 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
     
     //HOON
     if(NULL != qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)))){
-        printk("Q_sh : %s remove qsh file \n",__func__); //HOON
+        //printk("Q_sh : %s remove qsh file \n",__func__); //HOON
         qsh_upperdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
         qsh_dir = qsh_upperdir->d_inode;
-        inode_lock_nested(qsh_dir, I_MUTEX_PARENT2);
+        inode_lock_nested(qsh_dir, I_MUTEX_PARENT);
         qsh_upper = lookup_one_len(dentry->d_name.name, qsh_upperdir, dentry->d_name.len);
         if(qsh_upper){
             if(is_dir)
-                vfs_rmdir(qsh_dir, qsh_upper);
+                err2 = vfs_rmdir(qsh_dir, qsh_upper);
             else
-                vfs_unlink(qsh_dir, qsh_upper, NULL);
+                err2 = vfs_unlink(qsh_dir, qsh_upper, NULL);
 
-            OVL_I(d_inode(dentry))->qsh_dentry = NULL;
+            //OVL_I(d_inode(dentry))->qsh_dentry = NULL;
             dput(qsh_upper);
-            qsh_flag = 0;
         }
         inode_unlock(qsh_dir);
     }
@@ -891,14 +890,12 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 	 */
 	if (!err)
 		d_drop(dentry);
+    //HOON
+    if(!err2)
+        d_drop(dentry);
+    //HOON
 out_dput_upper:
     dput(upper);
-    //HOON
-    if(0 == qsh_flag){
-        printk("Q_sh : %s out_dput_upper\n",__func__); //HOON
-        d_drop(dentry);
-    }
-    //HOON
     
 out_unlock:
 	inode_unlock(dir);

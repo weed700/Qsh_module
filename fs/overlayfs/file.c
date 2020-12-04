@@ -95,12 +95,14 @@ static int ovl_real_fdget_meta(const struct file *file, struct fd *real,
 	else
 		realinode = ovl_inode_realdata(inode);
 
+    //HOON
     if(NULL != qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)))){
         //printk("Q_sh : %s \n",__func__); 
         qsh_dentry = qsh_dentry_dereference(OVL_I(d_inode(file->f_path.dentry)));
         realinode = qsh_dentry->d_inode;
     }
-
+    //HOON
+    
 	/* Has it been copied up since we'd opened it? */
 	if (unlikely(file_inode(real->file) != realinode)) {
 		real->flags = FDPUT_FPUT;
