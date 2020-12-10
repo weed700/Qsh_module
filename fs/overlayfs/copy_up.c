@@ -461,7 +461,7 @@ static int ovl_install_temp(struct ovl_copy_up_ctx *c, struct dentry *temp,
     else{
         err = ovl_do_rename(d_inode(c->workdir), temp, udir, upper, 0); //org
         //HOON(qsh dentry mkdir)
-        printk("Q_sh : %s qsh dentry mkdir\n",__func__);
+        //printk("Q_sh : %s qsh dentry mkdir\n",__func__);
         qsh_destdir = qsh_dentry_dereference(OVL_I(d_inode(c->parent)));
         qsh_udir = d_inode(qsh_destdir);
         inode_lock_nested(qsh_udir, I_MUTEX_PARENT);

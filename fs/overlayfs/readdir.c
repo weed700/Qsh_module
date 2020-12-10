@@ -405,7 +405,7 @@ static int ovl_dir_read_merged(struct dentry *dentry, struct list_head *list,
 		next = ovl_path_next(idx, dentry, &realpath);
 		rdd.is_upper = ovl_dentry_upper(dentry) == realpath.dentry;
         //HOON
-        printk("Q_sh : %s qsh merged start\n",__func__);
+        //printk("Q_sh : %s qsh merged start\n",__func__);
         qsh_path_upper(dentry, &qshpath);
         qsh_flag=1;
         if(qshpath.dentry && 1 == qsh_flag){
@@ -413,7 +413,7 @@ static int ovl_dir_read_merged(struct dentry *dentry, struct list_head *list,
             qsh_dir_read(&qshpath, &rdd);
             qsh_flag = 0;
         }
-        printk("Q_sh : %s qsh merged end\n",__func__);
+        //printk("Q_sh : %s qsh merged end\n",__func__);
         //HOON
 
 
@@ -964,7 +964,7 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
     //char qsh_meta[9] = "/.qsh_mt";
     //HOON
 
-    printk("Q_sh : %s start\n",__func__); //HOON 
+    //printk("Q_sh : %s start\n",__func__); //HOON 
 	od = kzalloc(sizeof(struct ovl_dir_file), GFP_KERNEL);
 	if (!od)
 		return -ENOMEM;

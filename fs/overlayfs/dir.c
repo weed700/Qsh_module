@@ -595,9 +595,9 @@ static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
 	struct cred *override_cred;
 	struct dentry *parent = dentry->d_parent;
 
-    printk("Q_sh : %s org start \n",__func__);//HOON
+    //printk("Q_sh : %s org start \n",__func__);//HOON
     err = ovl_copy_up(parent);
-    printk("Q_sh : %s org end \n",__func__);//HOON
+    //printk("Q_sh : %s org end \n",__func__);//HOON
 
     qsh_copy_up(parent); //HOON
 
@@ -845,7 +845,7 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
     }
     //HOON
     if(NULL != qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)))){
-        printk("Q_sh : %s remove qsh file \n",__func__); //HOON
+        //printk("Q_sh : %s remove qsh file \n",__func__); //HOON
         qsh_upperdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
         qsh_dir = qsh_upperdir->d_inode;
         inode_lock_nested(qsh_dir, I_MUTEX_PARENT2);
@@ -875,14 +875,10 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 	    (!opaquedir && !ovl_matches_upper(dentry, upper)))
 		goto out_dput_upper;
 
-	if (is_dir){
-        printk("Q_sh : %s remove org file \n",__func__); //HOON
+	if (is_dir)
 		err = vfs_rmdir(dir, upper);
-    }
-	else{
-        printk("Q_sh : %s vfs_unlink org file \n",__func__); //HOON
+	else
 		err = vfs_unlink(dir, upper, NULL);
-    }
 	ovl_dir_modified(dentry->d_parent, ovl_type_origin(dentry));
 
 	/*
@@ -891,21 +887,20 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 	 * sole user of this dentry.  Too tricky...  Just unhash for
 	 * now.
 	 */
-	if (!err){
-		d_drop(dentry);
-        printk("Q_sh : %s remove org drop \n",__func__); //HOON
-    }
+	if (!err)
+		d_drop(dentry); 
+
 out_dput_upper:
     dput(upper);
     //HOON
     if(!err2){
-        printk("Q_sh : %s remove qsh drop \n",__func__); //HOON
+        //printk("Q_sh : %s remove qsh drop \n",__func__); //HOON
         d_drop(dentry);
     }
     //HOON
     
 out_unlock:
-    printk("Q_sh : %s out_unlock \n",__func__); //HOON
+    //printk("Q_sh : %s out_unlock \n",__func__); //HOON
 	inode_unlock(dir);
 	dput(opaquedir);
 out:
