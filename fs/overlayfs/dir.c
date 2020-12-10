@@ -595,9 +595,9 @@ static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
 	struct cred *override_cred;
 	struct dentry *parent = dentry->d_parent;
 
-    //printk("Q_sh : %s org start \n",__func__);//HOON
+    printk("Q_sh : %s org start \n",__func__);//HOON
     err = ovl_copy_up(parent);
-    //printk("Q_sh : %s org end \n",__func__);//HOON
+    printk("Q_sh : %s org end \n",__func__);//HOON
 
     qsh_copy_up(parent); //HOON
 
@@ -843,27 +843,26 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 		if (IS_ERR(opaquedir))
             goto out;
     }
-    
     //HOON
     if(NULL != qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)))){
-        //printk("Q_sh : %s remove qsh file \n",__func__); //HOON
+        printk("Q_sh : %s remove qsh file \n",__func__); //HOON
         qsh_upperdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
         qsh_dir = qsh_upperdir->d_inode;
-        inode_lock_nested(qsh_dir, I_MUTEX_PARENT);
+        inode_lock_nested(qsh_dir, I_MUTEX_PARENT2);
         qsh_upper = lookup_one_len(dentry->d_name.name, qsh_upperdir, dentry->d_name.len);
         if(qsh_upper){
             if(is_dir)
-                err2 = vfs_rmdir(qsh_dir, qsh_upper);
+                err2 = vfs_rmdir(qsh_dir, qsh_upper); 
             else
                 err2 = vfs_unlink(qsh_dir, qsh_upper, NULL);
 
-            //OVL_I(d_inode(dentry))->qsh_dentry = NULL;
+            OVL_I(d_inode(dentry))->qsh_dentry = NULL;
             dput(qsh_upper);
         }
         inode_unlock(qsh_dir);
     }
     //HOON
-
+    
 	inode_lock_nested(dir, I_MUTEX_PARENT);
 	upper = lookup_one_len(dentry->d_name.name, upperdir,
 			       dentry->d_name.len);
@@ -876,10 +875,14 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 	    (!opaquedir && !ovl_matches_upper(dentry, upper)))
 		goto out_dput_upper;
 
-	if (is_dir)
+	if (is_dir){
+        printk("Q_sh : %s remove org file \n",__func__); //HOON
 		err = vfs_rmdir(dir, upper);
-	else
+    }
+	else{
+        printk("Q_sh : %s vfs_unlink org file \n",__func__); //HOON
 		err = vfs_unlink(dir, upper, NULL);
+    }
 	ovl_dir_modified(dentry->d_parent, ovl_type_origin(dentry));
 
 	/*
@@ -888,16 +891,21 @@ static int ovl_remove_upper(struct dentry *dentry, bool is_dir,
 	 * sole user of this dentry.  Too tricky...  Just unhash for
 	 * now.
 	 */
-	if (!err)
+	if (!err){
 		d_drop(dentry);
-    //HOON
-    if(!err2)
-        d_drop(dentry);
-    //HOON
+        printk("Q_sh : %s remove org drop \n",__func__); //HOON
+    }
 out_dput_upper:
     dput(upper);
+    //HOON
+    if(!err2){
+        printk("Q_sh : %s remove qsh drop \n",__func__); //HOON
+        d_drop(dentry);
+    }
+    //HOON
     
 out_unlock:
+    printk("Q_sh : %s out_unlock \n",__func__); //HOON
 	inode_unlock(dir);
 	dput(opaquedir);
 out:
