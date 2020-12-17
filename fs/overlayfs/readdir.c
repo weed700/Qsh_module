@@ -767,16 +767,16 @@ static int ovl_iterate_real(struct file *file, struct dir_context *ctx)
 			return PTR_ERR(rdt.cache);
 	}
     
-    printk("Q_sh : %s org_flag : %s in\n",__func__,od->realfile->f_path.dentry->d_name.name); //HOON
+    //printk("Q_sh : %s org_flag : %s in\n",__func__,od->realfile->f_path.dentry->d_name.name); //HOON
     err = iterate_dir(od->realfile, &rdt.ctx);
-    printk("Q_sh : %s org_flag end\n",__func__); //HOON
+    //printk("Q_sh : %s org_flag end\n",__func__); //HOON
 
     //HOON
     if(OVL_I(d_inode(file->f_path.dentry))->qsh_dentry){
-        printk("Q_sh : %s qsh o\n",__func__);
+        //printk("Q_sh : %s qsh o\n",__func__);
         qsh_path_upper(file->f_path.dentry,&qshpath);
         if(od->realfile->f_path.dentry->d_inode->i_ino != qshpath.dentry->d_inode->i_ino){
-            printk("Q_sh : %s qsh if\n",__func__); //HOON
+            //printk("Q_sh : %s qsh if\n",__func__); //HOON
             qsh_dir_read(&qshpath,&rdd);
         }
     }
