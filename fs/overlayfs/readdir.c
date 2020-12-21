@@ -59,6 +59,7 @@ struct ovl_dir_file {
 	struct list_head *cursor;
 	struct file *realfile;
 	struct file *upperfile;
+    bool is_qsh; //HOON
     //struct file *qsh_realfile; //HOON
     //struct path *qsh_realpath; //HOON
 };
@@ -739,10 +740,14 @@ static int ovl_iterate_real(struct file *file, struct dir_context *ctx)
 		.xinobits = ovl_xino_bits(dir->d_sb),
 	};
     //HOON
+    /*
 	struct ovl_readdir_data rdd = {
 		.ctx.actor = ovl_fill_merge
 	};
+    */
+    struct file* qsh_realfile;    
     struct path qshpath; 
+
     //HOON
 
 	if (rdt.xinobits && lower_layer)
@@ -772,16 +777,24 @@ static int ovl_iterate_real(struct file *file, struct dir_context *ctx)
     //printk("Q_sh : %s org_flag end\n",__func__); //HOON
 
     //HOON
-    if(OVL_I(d_inode(file->f_path.dentry))->qsh_dentry){
-        //printk("Q_sh : %s qsh o\n",__func__);
+    
+    if(OVL_I(d_inode(file->f_path.dentry))->qsh_dentry && 0 == od->is_qsh){
+        //printk("Q_sh : %s qsh o_1\n",__func__);
         qsh_path_upper(file->f_path.dentry,&qshpath);
+        qsh_realfile = ovl_path_open(&qshpath, O_RDONLY | O_DIRECTORY);
+        //printk("Q_sh : %s qsh o_2\n",__func__);
         if(od->realfile->f_path.dentry->d_inode->i_ino != qshpath.dentry->d_inode->i_ino){
-            //printk("Q_sh : %s qsh if\n",__func__); //HOON
-            qsh_dir_read(&qshpath,&rdd);
+            //printk("Q_sh : %s qsh if in\n",__func__); //HOON
+            //qsh_dir_read(&qshpath,&rdd);
+            err = iterate_dir(qsh_realfile,ctx);
+            fput(qsh_realfile);
+            od->is_qsh = 1;
+            //printk("Q_sh : %s qsh end\n",__func__); //HOON
         }
     }
     else
         printk("Q_sh : %s qsh x\n",__func__);
+        
     /*
     if(od->qsh_realfile){
         printk("Q_sh : %s qsh_flag in\n",__func__); //HOON
@@ -964,7 +977,7 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
     //char qsh_meta[9] = "/.qsh_mt";
     //HOON
 
-    //printk("Q_sh : %s start\n",__func__); //HOON 
+    //printk("Q_sh : %s start : %s\n",__func__,file->f_path.dentry->d_name.name); //HOON 
 	od = kzalloc(sizeof(struct ovl_dir_file), GFP_KERNEL);
 	if (!od)
 		return -ENOMEM;
@@ -1031,8 +1044,10 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 		kfree(od);
 		return PTR_ERR(realfile);
 	}
-
+    
+    od->is_qsh = 0; //HOON
     od->realfile = realfile;
+    //printk("Q_sh : %s end : %s\n",__func__,od->realfile->f_path.dentry->d_name.name); //HOON 
     od->is_real = ovl_dir_is_real(file->f_path.dentry);
     od->is_upper = OVL_TYPE_UPPER(type);
     file->private_data = od;
