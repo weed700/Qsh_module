@@ -1,8 +1,10 @@
 #include "user_ll_qsh.h"
 
 #define SIG_TEST 44
-#define SPARE_DISK "/dev/nvme2n1"
-#define DEFAULT_SIZE 600
+//#define SPARE_DISK "/dev/nvme2n1"
+#define SPARE_DISK "/dev/sdd"
+//#define DEFAULT_SIZE 600
+#define DEFAULT_SIZE 400
 #define MAX_CON 5
 Node* List = NULL;          //리스트 헤더
 Node* Current = NULL;       //리스트 탐색할 때 필요
