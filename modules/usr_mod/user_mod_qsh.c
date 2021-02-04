@@ -2,7 +2,8 @@
 
 #define SIG_TEST 44
 //#define SPARE_DISK "/dev/nvme2n1"
-#define SPARE_DISK "/dev/sdd"
+//#define SPARE_DISK "/dev/sdd"
+#define SPARE_DISK "/dev/sdc"
 //#define DEFAULT_SIZE 600
 #define DEFAULT_SIZE 400
 #define MAX_CON 5
