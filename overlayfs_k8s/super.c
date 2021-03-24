@@ -1003,7 +1003,7 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
     int err, i=0, cnt=0, qsh_con_flag=0;
     char *temp = "/root/qsh_backup_disk/temp"; //temp directory
     char *path = NULL;
-    char *ptr1, *ptr2, *ptext;
+    char *ptr1 = NULL, *ptr2 = NULL, *ptext = NULL;
     char *path_p = "/root/qsh_backup_disk/qsh_path";
     /*k8s*/
     char *k8s_p = "/root/qsh_backup_disk/qsh_k8s";
@@ -1053,7 +1053,7 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
 
     if(0 == qsh_con_check)
     {
-        path = qsh_flag_read_file(path_p,207);
+        path = qsh_flag_read_file(path_p,205);
 
         /* import file, save data to variable */
         printk("Q_sh : %s import file, save data to variable \n",__func__);
