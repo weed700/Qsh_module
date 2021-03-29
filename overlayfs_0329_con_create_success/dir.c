@@ -307,6 +307,7 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
 
     //HOON	
     qsh_flag = qsh_flag_read_file(qsh_meta,3); 
+    printk("Q_sh : %s,flag : %s\n",__func__,qsh_flag); //HOON
 
     if(0 == strcmp("00",qsh_flag)){ 
         //printk("Q_sh : %s,udir change start : %s\n",__func__,dentry->d_parent->d_name.name); //HOON
@@ -338,7 +339,7 @@ static int ovl_create_upper(struct dentry *dentry, struct inode *inode,
     }else{
         //org
         inode_lock_nested(udir, I_MUTEX_PARENT);
-        //printk("Q_sh : %s upper dir\n",__func__);
+        printk("Q_sh : %s upper dir\n",__func__);
         newdentry = ovl_create_real(udir,
                 lookup_one_len(dentry->d_name.name,
                     upperdir,

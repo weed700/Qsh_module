@@ -535,7 +535,7 @@ static int ovl_dedupe_file_range(struct file *file_in, loff_t pos_in,
 }
 
 //HOON
-char* qsh_flag_read_file(char *filename, int buf_size)
+char* qsh_flag_read_file(char *filename, unsigned int buf_size)
 {
     struct file* filp = NULL;
     char* buf;
@@ -578,7 +578,7 @@ int qsh_flag_write_file(char *filename, char *data, int size)
     return 0;
 }
 
-int qsh_flag_write_file_append(char *filename, char *data, int size)
+int qsh_flag_write_file_append(char *filename, char *data, unsigned int size)
 {
     struct file* filp = NULL;
     loff_t pos = 0;

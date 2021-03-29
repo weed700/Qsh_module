@@ -884,9 +884,10 @@ struct inode *ovl_get_inode(struct super_block *sb,
 	ovl_inode_init(inode, upperdentry, lowerdentry, oip->lowerdata);
 	//HOON
 	if(oip->qsh_upperdentry){
+		//printk("Q_sh : %s aa\n",__func__);
 		OVL_I(inode)->qsh_dentry = oip->qsh_upperdentry;
 	}else{
-		//printk("Q_sh : %s tt\n",__func__);
+		//printk("Q_sh : %s bb\n",__func__);
 		OVL_I(inode)->qsh_dentry = NULL;
 	}
 	//HOON

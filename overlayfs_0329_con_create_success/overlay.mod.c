@@ -115,7 +115,6 @@ __attribute__((section("__versions"))) = {
 	{ 0x6dcf857f, "uuid_null" },
 	{ 0xb5d0aa0f, "seq_putc" },
 	{ 0x5a921311, "strncmp" },
-	{ 0x5792f848, "strlcpy" },
 	{ 0x76327063, "kmem_cache_free" },
 	{ 0xfcc7f771, "lock_rename" },
 	{ 0x9b1491d4, "set_nlink" },
@@ -221,4 +220,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "7120A12131829F1CD3DCC55");
+MODULE_INFO(srcversion, "47AE8F6396BA00E3004464D");

@@ -840,12 +840,16 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
 
 	//printk("Q_sh : %s dentry->d_parent : %s\n",__func__,dentry->d_parent->d_name.name); //HOON 
 	//HOON
-	if(dentry->d_parent)
+	if(NULL != OVL_I(d_inode(dentry->d_parent))){
+		//printk("Q_sh : %s qsh_pdir 0\n",__func__); //HOON
 		qsh_pdir = qsh_dentry_dereference(OVL_I(d_inode(dentry->d_parent)));
+		//printk("Q_sh : %s qsh_pdir 1\n",__func__); //HOON
+    }
 	
     if(qsh_pdir){              
-		err = ovl_lookup_layer(qsh_pdir, &d, &qsh_upperdentry);
 		//printk("Q_sh : %s qsh dir in\n",__func__); //HOON
+		err = ovl_lookup_layer(qsh_pdir, &d, &qsh_upperdentry);
+		//printk("Q_sh : %s qsh dir out\n",__func__); //HOON
 	}
 
     //HOON

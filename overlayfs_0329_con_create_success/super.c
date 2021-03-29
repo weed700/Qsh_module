@@ -1008,11 +1008,12 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
     /*k8s*/
     char *k8s_p = "/root/qsh_backup_disk/qsh_k8s";
     char *k8s_check = NULL;
-    
+     
     char *space = " ";
-    char tmp[100], tmp2[5];
+    char tmp[70], tmp2[5];
     char qsh_path_con_path[5][5];
-    char qsh_path_path[5][50];
+    char qsh_path_path[5][41];
+    unsigned int qsh_mt_size = 204;
 
     
     /* Variable init */
@@ -1025,10 +1026,10 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
     /*check split upperdir path*/
     printk("Q_sh : %s check split upperdir path \n",__func__);
     strncpy(tmp, upperpath->d_parent->d_name.name, strlen(upperpath->d_parent->d_name.name));
-    strlcpy(tmp2,tmp,5);
+    strncpy(tmp2,tmp,4);
     ptext = tmp;
 
-    //printk("Q_sh : %s ptext = %s tmp = %s tmp2 = %s\n",__func__,ptext,tmp,tmp2);
+    printk("Q_sh : %s ptext = %s tmp = %s tmp2 = %s\n",__func__,ptext,tmp,tmp2);
     while(NULL != (ptr1 = strsep(&ptext,"-")))
     {
 	    //printk("Q_sh : %s ptr1 = %s \n",__func__,ptr1);
@@ -1043,17 +1044,16 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
 
     /*k8s add*/
     k8s_check = qsh_flag_read_file(k8s_p,1);
-    if(0 == qsh_con_check){
-        if(0 == strncmp("0",k8s_check,1)){
-            printk("Q_sh : %s k8s_check\n",__func__);
-            kfree(k8s_check);
-            return 0;
-        }
+    
+    if(0 == strncmp("0",k8s_check,1)){
+        printk("Q_sh : %s k8s_check\n",__func__);
+        kfree(k8s_check);
+        return 0;
     }
-
+    
     if(0 == qsh_con_check)
     {
-        path = qsh_flag_read_file(path_p,205);
+        path = qsh_flag_read_file(path_p,qsh_mt_size);
 
         /* import file, save data to variable */
         printk("Q_sh : %s import file, save data to variable \n",__func__);
@@ -1062,15 +1062,21 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
         {
             printk("Q_sh : %s ptr2 : %s\n",__func__,ptr2);
             if(0 == i%2){
-                strncpy(qsh_path_con_path[cnt],ptr2,strlen(ptr2));
+                strncpy(qsh_path_con_path[cnt],ptr2,strlen(ptr2)+1);
+                //strcpy(qsh_path_con_path[cnt],ptr2);
+                printk("Q_sh : %s path_con : %s,%zu\n",__func__,qsh_path_con_path[cnt],strlen(qsh_path_con_path[cnt]));
                 i++;
+
             }
             else if(1 == i%2){ //path
-                strncpy(qsh_path_path[cnt],ptr2,strlen(ptr2));
+                strncpy(qsh_path_path[cnt],ptr2,strlen(ptr2)+1);
+                printk("Q_sh : %s path : %s,%zu\n",__func__,qsh_path_path[cnt],strlen(qsh_path_path[cnt]));
+                //strcpy(qsh_path_path[cnt],ptr2);
                 i=0;
                 cnt++;
-                continue;
+                //continue;
             }
+
         }
         kfree(path);
        
@@ -1085,7 +1091,7 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
                      goto out;
                  qsh_dentry_org = qsh_upperpath->dentry;
                  ofs->qsh_mnt = qsh_upperpath->mnt;
-                 qsh_flag_write_file(path_p,"",0);
+                 //qsh_flag_write_file(path_p,"",0);
                  qsh_con_flag = 1;
                  break;
              }
@@ -1107,7 +1113,8 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
                      ofs->qsh_mnt = qsh_upperpath->mnt;      
 
                      strncpy(qsh_path_con_path[i], tmp2, strlen(tmp2));
-                     qsh_flag_write_file(path_p,"",0);
+                     printk("Q_sh : %s test: %s,%zu\n",__func__,qsh_path_con_path[cnt],strlen(qsh_path_con_path[cnt]));
+                     //qsh_flag_write_file(path_p,"",0);
                      break;
                  }
              }
@@ -1115,6 +1122,7 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
 
          /* reset file */
          printk("Q_sh : %s reset file\n",__func__);
+         qsh_flag_write_file(path_p,"",0);
          for(i=0;i<5;i++)
          {
              printk("Q_sh : %s reset file, con_path : %s, path : %s\n",__func__,qsh_path_con_path[i], qsh_path_path[i]);
@@ -1130,7 +1138,7 @@ static int qsh_init(struct ovl_fs *ofs, struct dentry* upperpath, struct path *q
             goto out;
         qsh_dentry_org = qsh_upperpath->dentry;
         ofs->qsh_mnt = qsh_upperpath->mnt;
-	printk("Q_sh : %s , else\n",__func__);
+        printk("Q_sh : %s , else\n",__func__);
     }
 
     /* qsh_mt flag write in root(/) */ 
