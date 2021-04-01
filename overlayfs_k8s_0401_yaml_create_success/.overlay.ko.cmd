@@ -1,0 +1,1 @@
+cmd_fs/overlayfs/overlay.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 -T ./scripts/module-common.lds  --build-id  -o fs/overlayfs/overlay.ko fs/overlayfs/overlay.o fs/overlayfs/overlay.mod.o ;  true
